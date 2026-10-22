@@ -42,7 +42,7 @@ public class UserAccount {
 
     public void setEmail(String email) {
         if(email == null || email.isBlank()) throw new  IllegalArgumentException("Email cannot be null or empty");
-        String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);
+        String normalizedEmail = normalizeEmail(email);
         if(normalizedEmail.length() > 254 || !normalizedEmail.contains("@")) throw new  IllegalArgumentException("Email address is invalid");
         this.email = normalizedEmail;
     }
@@ -57,5 +57,9 @@ public class UserAccount {
         String trimmedName = displayName.trim();
         if(trimmedName.length() > 50) throw new  IllegalArgumentException("Display name is invalid");
         this.displayName = trimmedName;
+    }
+
+    public static String normalizeEmail(String email) {
+        return email == null ? null : email.trim().toLowerCase(Locale.ROOT);
     }
 }
