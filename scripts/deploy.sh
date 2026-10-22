@@ -5,7 +5,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 # let's load local settings: (.env.example for var names):
-if [[-f .env]]; then
+if [[ -f .env ]]; then
   set -a; source .env; set +a
 fi
 : "${DOCKER_IMAGE:?DOCKER_IMAGE is not set (see .env.example)}"
