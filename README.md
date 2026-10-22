@@ -1,29 +1,86 @@
 <strong>**DO NOT DISTRIBUTE OR PUBLICLY POST SOLUTIONS TO THESE LABS. MAKE ALL FORKS OF THIS REPOSITORY WITH SOLUTION CODE PRIVATE. PLEASE REFER TO THE STUDENT CODE OF CONDUCT AND ETHICAL EXPECTATIONS FOR COLLEGE OF INFORMATION TECHNOLOGY STUDENTS FOR SPECIFICS. **</strong>
 
-# WESTERN GOVERNORS UNIVERSITY 
-## D424 – SOFTWARE ENGINEERING CAPSTONE
-Welcome to Software Engineering Capstone! This is an opportunity for students to develop full stack software engineering documentation and applications. They will execute documentation, unit testing, revision of software applications, and deploy software applications with scripts and containers on a cloud platform.
+# D424 Software Engineer Capstone: OpsLog
 
-FOR SPECIFIC TASK INSTRUCTIONS AND REQUIREMENTS FOR THIS ASSESSMENT, PLEASE REFER TO THE COURSE PAGE.
-BASIC INSTRUCTIONS
-For this assessment, you will deploy your developed full stack software product to a web service of your choice.
+An autoregulated strength-training web app for Kaimana Strength Collective. A morning check-in scales each day's session to the member's recovery, schedule, and available equipment. An MCP interface lets an authorized AI assistant read training data and write sessions through the same validated service layer.
 
+**Live:** https://opslog.onrender.com
 
-## SUPPLEMENTAL RESOURCES  
-1.	How to clone a project to IntelliJ using Git?
+## Tech stack
 
-> Ensure that you have Git installed on your system and that IntelliJ is installed using [Toolbox](https://www.jetbrains.com/toolbox-app/). Make sure that you are using version 2022.3.2. Once this has been confirmed, click the clone button and use the 'IntelliJ IDEA (HTTPS)' button. This will open IntelliJ with a prompt to clone the proejct. Save it in a safe location for the directory and press clone. IntelliJ will prompt you for your credentials. Enter in your WGU Credentials and the project will be cloned onto your local machine.  
+| Layer | Technology |
+|---|---|
+| Back end | Java 21, Spring Boot 4.1, Spring Security, Spring Data JPA, Flyway |
+| AI interface | Spring AI 2.0 MCP server (Streamable HTTP at `/mcp`) |
+| Front end | React 19, TypeScript, Vite, MUI, TanStack Query, React Router |
+| Database | PostgreSQL (Docker locally, Neon in production) |
+| Hosting | Docker image on Docker Hub, deployed to Render |
 
-2. How to create a branch and start Development?
+## Prerequisites
 
-- GitLab method
-> Press the '+' button located near your branch name. In the dropdown list, press the 'New branch' button. This will allow you to create a name for your branch. Once the branch has been named, you can select 'Create Branch' to push the branch to your repository.
+- JDK 21 (Eclipse Temurin)
+- Node.js 22 LTS
+- Docker Desktop (on Windows, enable **Settings → Resources → WSL Integration** for your distro)
+- IntelliJ IDEA (recommended)
 
-- IntelliJ method
-> In IntelliJ, Go to the 'Git' button on the top toolbar. Select the new branch option and create a name for the branch. Make sure checkout branch is selected and press create. You can now add a commit message and push the new branch to the local repo.
+## Run locally
 
-## SUPPORT
-If you need additional support, please navigate to the course page and reach out to your course instructor.
+```bash
+# Back end on http://localhost:8080. Starts Postgres from compose.yaml automatically.
+./mvnw spring-boot:run
 
-## FUTURE USE
-Take this opportunity to create or add to a simple resume portfolio to highlight and showcase your work for future use in career search, experience, and education!
+# Front end on http://localhost:5173. Proxies /api and /mcp to :8080.
+cd frontend
+npm install
+npm run dev
+```
+
+Health check: `curl localhost:8080/actuator/health`
+
+## Run tests
+
+```bash
+./mvnw test
+```
+
+Integration tests use Testcontainers, so Docker must be running.
+
+## Database migrations
+
+Schema changes are versioned Flyway scripts in `src/main/resources/db/migration`.
+
+- Name new files `V{n}__description.sql` (two underscores), for example `V2__add_exercises.sql`.
+- Never edit a migration that has already been applied. Flyway checksums each file and refuses to start if one changes. Write a new migration instead.
+- Hibernate runs with `ddl-auto: validate`, so entities must match the migrated schema.
+
+## Test the MCP server
+
+```bash
+npx @modelcontextprotocol/inspector
+```
+
+Add a server with transport **Streamable HTTP** and URL `http://localhost:8080/mcp` (or `https://opslog.onrender.com/mcp`), connect, and run the `ping` tool.
+
+## Deploy
+
+1. Copy `.env.example` to `.env` and fill in `DOCKER_IMAGE` and `RENDER_DEPLOY_HOOK_URL`.
+2. Log in to Docker Hub: `docker login -u <username>`
+3. Commit your changes, then run:
+
+```bash
+./scripts/deploy.sh
+```
+
+The script refuses to run with uncommitted changes. It runs the tests, builds the image, tags it with the Git commit SHA and `latest`, pushes both to Docker Hub, and triggers Render's deploy hook pinned to that SHA. Render waits for `/actuator/health` to pass before switching traffic.
+
+To roll back, use **Rollback** on a previous deploy in the Render dashboard.
+
+## Environment variables
+
+See `.env.example`. Production values are set in the Render dashboard and are never committed.
+
+## Windows / WSL notes
+
+- The IntelliJ terminal injects a Windows `JAVA_HOME`. In WSL, override it in `~/.bashrc` to point at a Linux JDK 21.
+- Vite uses `watch.usePolling` because file-change events don't cross from the Windows drive into WSL.
+- Line endings are normalized to LF by `.gitattributes`. Set IntelliJ to LF for new files.
