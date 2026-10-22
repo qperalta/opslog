@@ -19,6 +19,8 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/health").permitAll()
                         // TODO: replace with scoped MCP token auth.
                         .requestMatchers("/mcp").permitAll()
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated()
                 );
         return http.build();

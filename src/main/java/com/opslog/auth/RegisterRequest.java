@@ -5,16 +5,28 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public record RegisterRequest(
-        @NotBlank(message="Email is required")
-        @Email(message="Enter a valid email address")
-        @Size(max=254, message="Email must be 254 characters or fewer")
-        String email,
+    @NotBlank(message="Email is required")
+    @Email(message="Enter a valid email address")
+    @Size(max=254, message="Email must be 254 characters or fewer")
+    String email,
 
-        @NotBlank(message="Password is required")
-        @Size(min=8, max=72, message="Password must be 8 to 72 characters long")
-        String password,
+    @NotBlank(message="Password is required")
+    @Size(min=8, max=72, message="Password must be 8 to 72 characters long")
+    String password,
 
-        @NotBlank(message="Display name is required")
-        @Size(max=50,message="Display name must be 50 characters or fewer")
-        String displayName
-) {}
+    @NotBlank(message="Display name is required")
+    @Size(max=50,message="Display name must be 50 characters or fewer")
+    String displayName
+) {
+    public RegisterRequest {
+        /* @Valid checks raw request before AuthService normalizeEmail() but @Email doesn't allow whitespaces
+         * so we trim inside the record - already clean on validation.
+         */
+        email = email == null
+                ? null
+                : email.strip();
+        displayName = displayName == null
+                ? null
+                : displayName.strip();
+    }
+}
