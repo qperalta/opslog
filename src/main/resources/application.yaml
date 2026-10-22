@@ -1,8 +1,27 @@
 spring:
   application:
     name: opslog
-
   jpa:
     hibernate:
       ddl-auto: validate
     open-in-view: false
+  datasource:
+    hikari:
+      maximum-pool-size: 5
+  ai:
+    mcp:
+      server:
+        name: opslog
+        version: 1.0.0
+        protocol: streamable
+        type: sync
+        annotation-scanner:
+          enabled: true
+
+server:
+  port: ${PORT:8080}
+
+management:
+  health:
+    db:
+      enabled: true
