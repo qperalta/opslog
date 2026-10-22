@@ -6,7 +6,7 @@ cd "$(dirname "$0")/.."
 
 # let's load local settings: (.env.example for var names):
 if [[ -f .env ]]; then
-  set -a; source .env; set +a
+  set -a; source <(tr -d '\r' < .env); set +a # changed to make script immune to CRLF errors
 fi
 : "${DOCKER_IMAGE:?DOCKER_IMAGE is not set (see .env.example)}"
 : "${RENDER_DEPLOY_HOOK_URL:?RENDER_DEPLOY_HOOK_URL is not set (see .env.example)}"
