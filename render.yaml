@@ -1,0 +1,24 @@
+# Render blueprint for OpsLog. This describes the production web service.
+# Secrets sync is set to false so that values are entered in the Render dashboard and never stored here
+
+services:
+  - type: web
+    name: opslog
+    runtime: image
+    image:
+      url: docker.io/queperalta/opslog:latest
+      creds:
+        fromRegistryCreds:
+          name: dockerhub-opslog
+    region: oregon
+    plan: free
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: SPRING_PROFILE_ACTIVE
+        value: prod
+      - key: SPRING_DATASOURCE_URL
+        sync: false
+      - key: SPRING_DATASOURCE_USERNAME
+        sync: false
+      - key: SPRING_DATASOURCE_PASSWORD
+        sync: false
