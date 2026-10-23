@@ -9,9 +9,12 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
+    private final CurrentUser currentUser;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, CurrentUser currentUser) {
+
         this.authService = authService;
+        this.currentUser = currentUser;
     }
 
     @PostMapping("/register")
@@ -23,5 +26,10 @@ public class AuthController {
     @PostMapping("/login")
     public LoginResponse login(@Valid @RequestBody LoginRequest request) {
         return authService.login(request);
+    }
+
+    @GetMapping("/me")
+    public UserResponse me() {
+        return authService.currentUser(currentUser.id());
     }
 }

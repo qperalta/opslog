@@ -1,9 +1,11 @@
 package com.opslog.auth;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Optional;
 
@@ -43,5 +45,12 @@ public class AuthService {
         String hash = passwordEncoder.encode(request.password());
         UserAccount saved = users.save(new UserAccount(email, hash, request.displayName()));
         return UserResponse.from(saved);
+    }
+
+    @Transactional(readOnly = true)
+    public UserResponse currentUser(Long userId) {
+        return users.findById(userId)
+                .map(UserResponse::from)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Account no longer exists"));
     }
 }
