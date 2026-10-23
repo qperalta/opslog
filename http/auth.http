@@ -18,3 +18,23 @@ Content-Type: application/json
 
 ### JWT Resource
 GET http://localhost:8080/api/anything
+
+### Login: expect 200 with a token (saved for later requests)
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{"email":" KAI2@example.com ","password":"password123"}
+
+> {% client.global.set("token", response.body.token); %}
+
+### Wrong password: expect 401
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{"email":"kai2@example.com","password":"wrong-password"}
+
+### Unknown email: expect the same 401 body
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{"email":"nobody@example.com","password":"password123"}

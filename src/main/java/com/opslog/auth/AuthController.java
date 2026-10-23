@@ -19,4 +19,9 @@ public class AuthController {
     public UserResponse register(@Valid @RequestBody RegisterRequest request) { //runs bean validation annotations on the record before the method body runs.
         return authService.register(request);
     }
+
+    @PostMapping("/login")
+    public LoginResponse login(@Valid @RequestBody LoginRequest request) {
+        return authService.login(request);
+    }
 }
