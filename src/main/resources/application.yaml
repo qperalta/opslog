@@ -5,6 +5,10 @@ spring:
     hibernate:
       ddl-auto: validate
     open-in-view: false
+    properties:
+      hibernate:
+        # load lazy relations for a page of rows in batches instead of one query per row (N+1)
+        default_batch_fetch_size: 50
   datasource:
     hikari:
       maximum-pool-size: 5
