@@ -2,6 +2,9 @@ package com.opslog.common;
 
 import com.opslog.auth.EmailAlreadyRegisteredException;
 import com.opslog.auth.InvalidCredentialsException;
+import com.opslog.catalog.DuplicateExerciseNameException;
+import com.opslog.catalog.ExerciseNotFoundException;
+import com.opslog.catalog.ExerciseReadOnlyException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +53,21 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(EmailAlreadyRegisteredException.class)
     ProblemDetail handleEmailTaken(EmailAlreadyRegisteredException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler(ExerciseNotFoundException.class)
+    ProblemDetail handleExerciseNotFound(ExerciseNotFoundException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    @ExceptionHandler(ExerciseReadOnlyException.class)
+    ProblemDetail handleExerciseReadOnly(ExerciseReadOnlyException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
+    }
+
+    @ExceptionHandler(DuplicateExerciseNameException.class)
+    ProblemDetail handleDuplicateExercise(DuplicateExerciseNameException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
     }
 
