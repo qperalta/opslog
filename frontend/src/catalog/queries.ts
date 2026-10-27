@@ -1,7 +1,7 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, toQuery } from '../api/client'
 import type { Lookup, Page } from '../api/types'
-import type { Equipment, Exercise, ExerciseSearch } from './types'
+import type { Equipment, Exercise, ExerciseRequest, ExerciseSearch } from './types'
 
 // lookups rarely change, so they are fetched once per session
 const LOOKUP = { staleTime: Infinity }
@@ -24,3 +24,22 @@ export const useExercises = (search: ExerciseSearch) =>
     queryFn: () => api<Page<Exercise>>(`/api/catalog/exercises${toQuery(search)}`),
     placeholderData: keepPreviousData,
   })
+
+export function useSaveExercise() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, body }: { id?: number; body: ExerciseRequest }) =>
+      id === undefined
+        ? api<Exercise>('/api/catalog/exercises', { method: 'POST', body })
+        : api<Exercise>(`/api/catalog/exercises/${id}`, { method: 'PUT', body }),
+    onSuccess: () => client.invalidateQueries({ queryKey: ['exercises'] }),
+  })
+}
+
+export function useDeleteExercise() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => api<void>(`/api/catalog/exercises/${id}`, { method: 'DELETE' }),
+    onSuccess: () => client.invalidateQueries({ queryKey: ['exercises'] }),
+  })
+}
