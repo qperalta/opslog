@@ -3,6 +3,7 @@ package com.opslog.common;
 import com.opslog.auth.EmailAlreadyRegisteredException;
 import com.opslog.auth.InvalidCredentialsException;
 import com.opslog.catalog.DuplicateExerciseNameException;
+import com.opslog.checkin.CheckInNotFoundException;
 import com.opslog.catalog.ExerciseNotFoundException;
 import com.opslog.catalog.ExerciseReadOnlyException;
 import com.opslog.location.DuplicateLocationNameException;
@@ -87,6 +88,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(DuplicateLocationNameException.class)
     ProblemDetail handleDuplicateLocation(DuplicateLocationNameException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler(CheckInNotFoundException.class)
+    ProblemDetail handleCheckInNotFound(CheckInNotFoundException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
