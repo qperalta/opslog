@@ -9,6 +9,8 @@ import com.opslog.catalog.ExerciseReadOnlyException;
 import com.opslog.location.DuplicateLocationNameException;
 import com.opslog.location.LocationNotFoundException;
 import com.opslog.location.LocationReadOnlyException;
+import com.opslog.plan.ProgramNotChosenException;
+import com.opslog.plan.ProgramTemplateNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,6 +94,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(CheckInNotFoundException.class)
     ProblemDetail handleCheckInNotFound(CheckInNotFoundException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    @ExceptionHandler(ProgramTemplateNotFoundException.class)
+    ProblemDetail handleTemplateNotFound(ProgramTemplateNotFoundException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    @ExceptionHandler(ProgramNotChosenException.class)
+    ProblemDetail handleProgramNotChosen(ProgramNotChosenException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
