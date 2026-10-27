@@ -5,6 +5,9 @@ import com.opslog.auth.InvalidCredentialsException;
 import com.opslog.catalog.DuplicateExerciseNameException;
 import com.opslog.catalog.ExerciseNotFoundException;
 import com.opslog.catalog.ExerciseReadOnlyException;
+import com.opslog.location.DuplicateLocationNameException;
+import com.opslog.location.LocationNotFoundException;
+import com.opslog.location.LocationReadOnlyException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,6 +71,21 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(DuplicateExerciseNameException.class)
     ProblemDetail handleDuplicateExercise(DuplicateExerciseNameException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler(LocationNotFoundException.class)
+    ProblemDetail handleLocationNotFound(LocationNotFoundException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    @ExceptionHandler(LocationReadOnlyException.class)
+    ProblemDetail handleLocationReadOnly(LocationReadOnlyException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
+    }
+
+    @ExceptionHandler(DuplicateLocationNameException.class)
+    ProblemDetail handleDuplicateLocation(DuplicateLocationNameException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
     }
 
