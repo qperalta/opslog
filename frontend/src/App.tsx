@@ -1,8 +1,8 @@
-import { Typography } from '@mui/material'
 import { Navigate, RouterProvider, createBrowserRouter } from 'react-router'
 import { LoginPage } from './auth/LoginPage'
 import { RegisterPage } from './auth/RegisterPage'
 import { RequireAuth } from './auth/RequireAuth'
+import { CheckInPage } from './checkin/CheckInPage'
 import { ExercisesPage } from './catalog/ExercisesPage'
 import { AppLayout } from './components/AppLayout'
 import { LocationsPage } from './locations/LocationsPage'
@@ -17,7 +17,7 @@ const router = createBrowserRouter([
       {
         element: <AppLayout />,
         children: [
-          { path: '/checkin', element: <Typography>Check-in is coming soon.</Typography> },
+          { path: '/checkin', element: <CheckInPage /> },
           { path: '/exercises', element: <ExercisesPage /> },
           { path: '/locations', element: <LocationsPage /> },
         ],

@@ -13,6 +13,19 @@ const theme = createTheme({
     background: { default: '#f4f6f7' },
   },
   shape: { borderRadius: 10 },
+  components: {
+    // a picked score should be obvious at a glance
+    MuiToggleButton: {
+      styleOverrides: {
+        root: ({ theme }) => ({
+          '&.Mui-selected, &.Mui-selected:hover': {
+            backgroundColor: theme.palette.primary.main,
+            color: theme.palette.primary.contrastText,
+          },
+        }),
+      },
+    },
+  },
 })
 
 const queryClient = new QueryClient({
