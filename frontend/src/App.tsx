@@ -3,6 +3,7 @@ import { Navigate, RouterProvider, createBrowserRouter } from 'react-router'
 import { LoginPage } from './auth/LoginPage'
 import { RegisterPage } from './auth/RegisterPage'
 import { RequireAuth } from './auth/RequireAuth'
+import { ExercisesPage } from './catalog/ExercisesPage'
 import { AppLayout } from './components/AppLayout'
 
 // paths here must also be listed in SpaController on the server
@@ -16,6 +17,7 @@ const router = createBrowserRouter([
         element: <AppLayout />,
         children: [
           { path: '/checkin', element: <Typography>Check-in is coming soon.</Typography> },
+          { path: '/exercises', element: <ExercisesPage /> },
         ],
       },
     ],
