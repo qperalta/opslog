@@ -14,6 +14,7 @@ import { useNotify } from '../components/NotifyContext'
 import { PageHeader } from '../components/PageHeader'
 import { useDebounced } from '../components/useDebounced'
 import { ExerciseFormDialog } from './ExerciseFormDialog'
+import { MuscleMap } from './MuscleMap'
 import {
   useDeleteExercise, useEquipment, useExerciseKinds, useExercises, useMovementPatterns, useMuscleGroups,
 } from './queries'
@@ -126,32 +127,35 @@ export function ExercisesPage() {
       <Stack spacing={1.5}>
         {data?.items.map((exercise) => (
           <Card key={exercise.id} variant="outlined">
-            <CardContent sx={{ '&:last-child': { pb: 2 } }}>
-              <Stack direction="row" sx={{ alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                <Box>
-                  <Typography sx={{ fontWeight: 600 }}>{exercise.name}</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {exercise.movementPattern.name} · {exercise.primaryMuscle.name} · {exercise.target}
-                  </Typography>
-                </Box>
-                {exercise.custom && (
-                  <Stack direction="row">
-                    <IconButton size="small" aria-label={`Edit ${exercise.name}`} onClick={() => setEditing(exercise)}>
-                      <EditIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton size="small" aria-label={`Delete ${exercise.name}`} onClick={() => setDeleting(exercise)}>
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  </Stack>
-                )}
-              </Stack>
-              <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
-                <Chip size="small" color="primary" label={labelOf(exercise.kind)} />
-                {exercise.custom && <Chip size="small" color="secondary" label="Custom" />}
-                {exercise.equipment.map((item) => (
-                  <Chip key={item.id} size="small" variant="outlined" label={item.name} />
-                ))}
-              </Stack>
+            <CardContent sx={{ display: 'flex', gap: 1.5, '&:last-child': { pb: 2 } }}>
+              <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                <Stack direction="row" sx={{ alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                  <Box>
+                    <Typography sx={{ fontWeight: 600 }}>{exercise.name}</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {exercise.movementPattern.name} · {exercise.primaryMuscle.name} · {exercise.target}
+                    </Typography>
+                  </Box>
+                  {exercise.custom && (
+                    <Stack direction="row">
+                      <IconButton size="small" aria-label={`Edit ${exercise.name}`} onClick={() => setEditing(exercise)}>
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                      <IconButton size="small" aria-label={`Delete ${exercise.name}`} onClick={() => setDeleting(exercise)}>
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Stack>
+                  )}
+                </Stack>
+                <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
+                  <Chip size="small" color="primary" label={labelOf(exercise.kind)} />
+                  {exercise.custom && <Chip size="small" color="secondary" label="Custom" />}
+                  {exercise.equipment.map((item) => (
+                    <Chip key={item.id} size="small" variant="outlined" label={item.name} />
+                  ))}
+                </Stack>
+              </Box>
+              <MuscleMap muscle={exercise.primaryMuscle.name} width={96} />
             </CardContent>
           </Card>
         ))}
