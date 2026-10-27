@@ -1,6 +1,7 @@
 import LogoutIcon from '@mui/icons-material/Logout'
 import { AppBar, BottomNavigation, BottomNavigationAction, Box, Container, IconButton, Paper, Toolbar, Typography } from '@mui/material'
 import { Outlet, useLocation, useNavigate } from 'react-router'
+import emblem from '../assets/emblem.png'
 import { useAuth } from '../auth/AuthContext'
 import { NAV_ITEMS } from './navItems'
 
@@ -16,6 +17,7 @@ export function AppLayout() {
       <AppBar position="sticky">
         <Container maxWidth="sm" disableGutters>
           <Toolbar>
+            <Box component="img" src={emblem} alt="" sx={{ width: 28, height: 28, mr: 1.5 }} />
             <Typography variant="h6" sx={{ flexGrow: 1 }}>
               OpsLog
             </Typography>
