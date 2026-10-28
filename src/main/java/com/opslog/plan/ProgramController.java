@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 
 @RestController
@@ -15,10 +17,12 @@ import java.util.List;
 public class ProgramController {
 
     private final ProgramService programService;
+    private final PlanService planService;
     private final CurrentUser currentUser;
 
-    public ProgramController(ProgramService programService, CurrentUser currentUser) {
+    public ProgramController(ProgramService programService, PlanService planService, CurrentUser currentUser) {
         this.programService = programService;
+        this.planService = planService;
         this.currentUser = currentUser;
     }
 
@@ -35,6 +39,9 @@ public class ProgramController {
     /* creates on first call, switches after */
     @PutMapping("/program")
     public UserProgramResponse choose(@Valid @RequestBody UserProgramRequest request) {
-        return programService.choose(currentUser.id(), request);
+        UserProgramResponse program = programService.choose(currentUser.id(), request);
+        /* switching templates re-plans the days ahead */
+        planService.replanFrom(currentUser.id(), LocalDate.now(ZoneOffset.UTC));
+        return program;
     }
 }

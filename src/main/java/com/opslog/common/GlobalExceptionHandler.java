@@ -9,6 +9,7 @@ import com.opslog.catalog.ExerciseReadOnlyException;
 import com.opslog.location.DuplicateLocationNameException;
 import com.opslog.location.LocationNotFoundException;
 import com.opslog.location.LocationReadOnlyException;
+import com.opslog.plan.LockedDayException;
 import com.opslog.plan.ProgramNotChosenException;
 import com.opslog.plan.ProgramTemplateNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -105,6 +106,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(ProgramNotChosenException.class)
     ProblemDetail handleProgramNotChosen(ProgramNotChosenException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    @ExceptionHandler(LockedDayException.class)
+    ProblemDetail handleLockedDay(LockedDayException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
