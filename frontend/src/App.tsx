@@ -4,6 +4,7 @@ import { RegisterPage } from './auth/RegisterPage'
 import { RequireAuth } from './auth/RequireAuth'
 import { CheckInPage } from './checkin/CheckInPage'
 import { ExercisesPage } from './catalog/ExercisesPage'
+import { HistoryPage } from './history/HistoryPage'
 import { AppLayout } from './components/AppLayout'
 import { LocationsPage } from './locations/LocationsPage'
 import { PlannerPage } from './planner/PlannerPage'
@@ -22,6 +23,7 @@ const router = createBrowserRouter([
           { path: '/checkin', element: <CheckInPage /> },
           { path: '/today', element: <TodayPage /> },
           { path: '/planner', element: <PlannerPage /> },
+          { path: '/history', element: <HistoryPage /> },
           { path: '/exercises', element: <ExercisesPage /> },
           { path: '/locations', element: <LocationsPage /> },
         ],

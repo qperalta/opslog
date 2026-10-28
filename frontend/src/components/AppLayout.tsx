@@ -37,7 +37,7 @@ export function AppLayout() {
         <Container maxWidth="sm" disableGutters>
           <BottomNavigation showLabels value={current} onChange={(_, path: string) => navigate(path)}>
             {NAV_ITEMS.map(({ path, label, Icon }) => (
-              <BottomNavigationAction key={path} value={path} label={label} icon={<Icon />} />
+              <BottomNavigationAction key={path} value={path} label={label} icon={<Icon />} sx={{ minWidth: 0, px: 0.5 }} />
             ))}
           </BottomNavigation>
         </Container>
