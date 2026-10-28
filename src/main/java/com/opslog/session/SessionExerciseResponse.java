@@ -24,7 +24,7 @@ public record SessionExerciseResponse(int position, Long exerciseId, String name
     }
 
     /* getClass() unwraps a lazy proxy */
-    static String kindOf(Object entity) {
+    public static String kindOf(Object entity) {
         return Hibernate.getClass(entity).getAnnotation(DiscriminatorValue.class).value();
     }
 }
