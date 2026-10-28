@@ -7,11 +7,14 @@ import com.opslog.checkin.CheckInNotFoundException;
 import com.opslog.catalog.ExerciseNotFoundException;
 import com.opslog.catalog.ExerciseReadOnlyException;
 import com.opslog.location.DuplicateLocationNameException;
+import com.opslog.logging.LoggedSetNotFoundException;
+import com.opslog.logging.SessionExerciseNotFoundException;
 import com.opslog.location.LocationNotFoundException;
 import com.opslog.location.LocationReadOnlyException;
 import com.opslog.plan.LockedDayException;
 import com.opslog.plan.ProgramNotChosenException;
 import com.opslog.plan.ProgramTemplateNotFoundException;
+import com.opslog.session.SessionHasLogsException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -111,6 +114,21 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(LockedDayException.class)
     ProblemDetail handleLockedDay(LockedDayException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler(SessionHasLogsException.class)
+    ProblemDetail handleSessionHasLogs(SessionHasLogsException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler(SessionExerciseNotFoundException.class)
+    ProblemDetail handleSessionExerciseNotFound(SessionExerciseNotFoundException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    @ExceptionHandler(LoggedSetNotFoundException.class)
+    ProblemDetail handleLoggedSetNotFound(LoggedSetNotFoundException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

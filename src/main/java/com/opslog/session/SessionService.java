@@ -51,9 +51,10 @@ public class SessionService {
         return stored.map(SessionResponse::from).orElseGet(() -> build(userId, date));
     }
 
-    /* after the check-in or the plan changes */
+    /* after the check-in or the plan changes; refused once sets are logged */
     public SessionResponse rebuild(long userId, LocalDate date) {
         sessions.findByUserIdAndDate(userId, date).ifPresent(existing -> {
+            if(existing.hasLoggedSets()) throw new SessionHasLogsException(date);
             sessions.delete(existing);
             /* the unique (user, date) row must be gone before the insert */
             sessions.flush();
