@@ -14,6 +14,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 /* one per user per day */
 @Entity
@@ -86,6 +87,12 @@ public class TrainingSession {
     public String getRationale() { return rationale; }
     public Instant getCreatedAt() { return createdAt; }
     public List<SessionExercise> getExercises() { return Collections.unmodifiableList(exercises); }
+
+    public boolean hasLoggedSets() { return exercises.stream().anyMatch(SessionExercise::hasLoggedSets); }
+
+    public Optional<SessionExercise> findExercise(int position) {
+        return exercises.stream().filter(item -> item.getPosition() == position).findFirst();
+    }
 
     public SessionExercise addExercise(Exercise exercise, Exercise substitutedFor, int sets, BigDecimal targetLoadLb, boolean mainLift, String reason) {
         SessionExercise item = new SessionExercise(this, exercises.size() + 1, exercise, substitutedFor, sets, targetLoadLb, mainLift, reason);

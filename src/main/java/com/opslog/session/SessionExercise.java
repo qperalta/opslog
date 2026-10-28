@@ -2,9 +2,14 @@ package com.opslog.session;
 
 import com.opslog.catalog.Exercise;
 import com.opslog.common.Require;
+import com.opslog.logging.LoggedSet;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 
 @Entity
 @Table(name="session_exercises")
@@ -46,6 +51,10 @@ public class SessionExercise {
     @Column(length=MAX_REASON)
     private String reason;
 
+    @OneToMany(mappedBy="sessionExercise", cascade=CascadeType.ALL, orphanRemoval=true)
+    @OrderBy("setNumber")
+    private List<LoggedSet> loggedSets = new ArrayList<>();
+
     protected SessionExercise() {}
 
     SessionExercise(TrainingSession session, int position, Exercise exercise, Exercise substitutedFor, int sets, BigDecimal targetLoadLb, boolean mainLift, String reason) {
@@ -75,5 +84,24 @@ public class SessionExercise {
     public boolean isMainLift() { return mainLift; }
     public String getReason() { return reason; }
 
+    public List<LoggedSet> getLoggedSets() { return Collections.unmodifiableList(loggedSets); }
+
     public boolean isSubstitute() { return substitutedFor != null; }
+
+    public boolean hasLoggedSets() { return !loggedSets.isEmpty(); }
+
+    /* numbers continue after the highest one, so a deleted set leaves a gap */
+    public LoggedSet logSet(Integer reps, Integer durationSeconds, BigDecimal loadLb, boolean clean) {
+        int next = loggedSets.stream().mapToInt(LoggedSet::getSetNumber).max().orElse(0) + 1;
+        Require.that(next <= LoggedSet.MAX_SETS, "An exercise can have at most " + LoggedSet.MAX_SETS + " logged sets");
+        LoggedSet set = new LoggedSet(this, next, reps, durationSeconds, loadLb, clean);
+        loggedSets.add(set);
+        return set;
+    }
+
+    public Optional<LoggedSet> findLoggedSet(int setNumber) {
+        return loggedSets.stream().filter(set -> set.getSetNumber() == setNumber).findFirst();
+    }
+
+    public void removeLoggedSet(LoggedSet set) { loggedSets.remove(set); }
 }
