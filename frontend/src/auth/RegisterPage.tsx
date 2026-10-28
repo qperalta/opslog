@@ -36,7 +36,7 @@ export function RegisterPage() {
     defaultValues: { email: '', displayName: '', password: '', confirmPassword: '' },
   })
 
-  if (user) return <Navigate to="/checkin" replace />
+  if (user) return <Navigate to="/today" replace />
 
   const onSubmit = async ({ email, displayName, password }: RegisterValues) => {
     setFormError(null)
@@ -44,7 +44,7 @@ export function RegisterPage() {
       await api('/api/auth/register', { method: 'POST', body: { email, displayName, password } })
       await login(email, password)
       notify(`Welcome, ${displayName}! Your account was created.`)
-      navigate('/checkin', { replace: true })
+      navigate('/today', { replace: true })
     } catch (error) {
       setFormError(applyServerErrors(error, setError, ['email', 'displayName', 'password']))
     }

@@ -1,8 +1,13 @@
 import LogoutIcon from '@mui/icons-material/Logout'
-import { AppBar, BottomNavigation, BottomNavigationAction, Box, Container, IconButton, Paper, Toolbar, Typography } from '@mui/material'
+import PlaceIcon from '@mui/icons-material/Place'
+import {
+  AppBar, BottomNavigation, BottomNavigationAction, Box, Chip, Container, IconButton, Paper, Toolbar, Typography,
+} from '@mui/material'
 import { Outlet, useLocation, useNavigate } from 'react-router'
 import emblem from '../assets/emblem.png'
 import { useAuth } from '../auth/AuthContext'
+import { todayLocal } from '../checkin/dates'
+import { useCheckIn } from '../checkin/queries'
 import { NAV_ITEMS } from './navItems'
 
 /* phone-width frame: top bar, page content, bottom navigation */
@@ -10,6 +15,9 @@ export function AppLayout() {
   const { user, logout } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
+  // shares the Today screen's query, so it updates on check-in
+  const checkIn = useCheckIn(todayLocal())
+  const place = checkIn.data?.location?.name
   const current = NAV_ITEMS.find((item) => location.pathname.startsWith(item.path))?.path ?? false
 
   return (
@@ -21,7 +29,11 @@ export function AppLayout() {
             <Typography variant="h6" sx={{ flexGrow: 1 }}>
               OpsLog
             </Typography>
-            <Typography variant="body2" sx={{ mr: 1 }}>
+            {place && (
+              <Chip size="small" icon={<PlaceIcon />} label={place} aria-label={`Training at ${place}`}
+                    sx={{ mr: 1, maxWidth: 150, color: 'inherit', bgcolor: 'rgba(255,255,255,0.15)', '& .MuiChip-icon': { color: 'inherit' } }} />
+            )}
+            <Typography variant="body2" sx={{ mr: 1, display: { xs: 'none', sm: 'block' } }}>
               {user?.displayName}
             </Typography>
             <IconButton color="inherit" onClick={logout} aria-label="Sign out">

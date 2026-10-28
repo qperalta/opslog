@@ -27,7 +27,7 @@ export function LoginPage() {
     defaultValues: { email: '', password: '' },
   })
 
-  const from = (location.state as { from?: string } | null)?.from ?? '/checkin'
+  const from = (location.state as { from?: string } | null)?.from ?? '/today'
   if (user) return <Navigate to={from} replace />
 
   const onSubmit = async (values: LoginValues) => {

@@ -8,6 +8,7 @@ import { z } from 'zod'
 import { applyServerErrors } from '../api/formErrors'
 import { useNotify } from '../components/NotifyContext'
 import { useLocations } from '../locations/queries'
+import { formatDay, todayLocal } from './dates'
 import { useSaveCheckIn } from './queries'
 import type { CheckIn } from './types'
 
@@ -30,9 +31,10 @@ const SCORES = [1, 2, 3, 4, 5]
 interface Props {
   date: string
   existing: CheckIn | null
+  onSaved?: () => void
 }
 
-export function CheckInForm({ date, existing }: Props) {
+export function CheckInForm({ date, existing, onSaved }: Props) {
   const locations = useLocations()
   const save = useSaveCheckIn()
   const notify = useNotify()
@@ -48,7 +50,9 @@ export function CheckInForm({ date, existing }: Props) {
     setFormError(null)
     try {
       const saved = await save.mutateAsync({ date, body: values })
-      notify(`Checked in: ${saved.tier.name} tier today`)
+      const day = date === todayLocal() ? 'today' : `on ${formatDay(date)}`
+      notify(`${existing ? 'Check-in updated' : 'Checked in'}: ${saved.tier.name} tier ${day}`)
+      onSaved?.()
     } catch (error) {
       setFormError(applyServerErrors(error, setError, ['sleepQuality', 'soreness', 'locationId']))
     }

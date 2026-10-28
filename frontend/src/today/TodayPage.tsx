@@ -1,14 +1,19 @@
 import AddIcon from '@mui/icons-material/Add'
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import {
-  Alert, AlertTitle, Box, Button, Card, CardContent, Chip, LinearProgress, Stack, Typography,
+  Accordion, AccordionDetails, AccordionSummary, Alert, AlertTitle, Box, Button, Card, CardContent, Chip, LinearProgress,
+  Stack, Typography,
 } from '@mui/material'
 import { useState } from 'react'
 import { Link as RouterLink } from 'react-router'
 import { ApiError } from '../api/client'
+import { CheckInForm } from '../checkin/CheckInForm'
+import { CheckInHistory } from '../checkin/CheckInHistory'
 import { formatDay, todayLocal } from '../checkin/dates'
 import { useCheckIn } from '../checkin/queries'
+import { TierRules } from '../checkin/TierRules'
 import { tierColor } from '../checkin/tierColor'
 import { useNotify } from '../components/NotifyContext'
 import { PageHeader } from '../components/PageHeader'
@@ -56,6 +61,25 @@ export function TodayPage() {
         {formatDay(today, { weekday: 'long', month: 'long', day: 'numeric' })}
       </Typography>
 
+      {/* the check-in card shows until today's check-in exists */}
+      {checkIn.isError && <Alert severity="error" sx={{ mb: 2 }}>{checkIn.error.message}</Alert>}
+      {checkIn.isSuccess && checkIn.data === null && (
+        <Card sx={{ mb: 2 }}>
+          <CardContent>
+            <Typography variant="h6" component="h2" sx={{ mb: 2 }}>Morning check-in</Typography>
+            <CheckInForm key={today} date={today} existing={null} />
+            <Accordion disableGutters elevation={0} sx={{ mt: 2, '&::before': { display: 'none' } }}>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ px: 0 }}>
+                <Typography variant="body2" color="text.secondary">How the tier is picked</Typography>
+              </AccordionSummary>
+              <AccordionDetails sx={{ px: 0 }}>
+                <TierRules />
+              </AccordionDetails>
+            </Accordion>
+          </CardContent>
+        </Card>
+      )}
+
       {session.isPending && <LinearProgress />}
       {session.isError && !noProgram && <Alert severity="error">{session.error.message}</Alert>}
 
@@ -73,15 +97,19 @@ export function TodayPage() {
       )}
 
       {session.data?.status === 'NEEDS_CHECKIN' && (
-        <Alert severity="warning" action={<Button component={RouterLink} to="/checkin" size="small" sx={{ whiteSpace: 'nowrap' }}>Check in</Button>}>
+        <Alert severity="warning">
           <AlertTitle>{session.data.workout?.name ?? 'Training'} today</AlertTitle>
-          Check in first. Your sleep and soreness set the tier, and your location sets the equipment.
+          Check in above first. Your sleep and soreness set the tier, and your location sets the equipment.
         </Alert>
       )}
 
       {session.data?.status === 'READY' && (
         <ReadySession date={today} session={session.data} outOfDate={outOfDate} rebuilding={rebuild.isPending} onRebuild={onRebuild} />
       )}
+
+      <Box sx={{ mt: 3 }}>
+        <CheckInHistory />
+      </Box>
     </>
   )
 }
