@@ -56,13 +56,15 @@ public class Location {
     }
 
     public void replaceEquipment(Collection<Equipment> items) {
-        Require.that(items != null && !items.contains(null), "Equipment cannot be null");
+        Require.that(items != null && items.stream().noneMatch(Objects::isNull), "Equipment cannot be null");
         equipment.clear();
         equipment.addAll(items);
     }
 
     /* used by substitution */
     public boolean hasAll(Collection<Equipment> required) { return equipment.containsAll(required); }
+
+    public boolean has(Equipment item) { return equipment.contains(item); }
 
     public boolean isCustom() { return ownerId != null; }
 
