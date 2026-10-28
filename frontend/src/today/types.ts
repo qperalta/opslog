@@ -14,6 +14,24 @@ export interface SessionExercise {
   mainLift: boolean
   substitutedFor: Lookup | null
   reason: string | null
+  logged: LoggedSet[]
+}
+
+// strength sets log reps, timed and cardio sets log seconds
+export interface LoggedSet {
+  setNumber: number
+  reps: number | null
+  durationSeconds: number | null
+  loadLb: number | null
+  clean: boolean
+  loggedAt: string
+}
+
+export interface LoggedSetBody {
+  reps: number | null
+  durationSeconds: number | null
+  loadLb: number | null
+  clean: boolean
 }
 
 export interface Session {

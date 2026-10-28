@@ -1,7 +1,10 @@
+import AddIcon from '@mui/icons-material/Add'
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz'
+import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import {
   Alert, AlertTitle, Box, Button, Card, CardContent, Chip, LinearProgress, Stack, Typography,
 } from '@mui/material'
+import { useState } from 'react'
 import { Link as RouterLink } from 'react-router'
 import { ApiError } from '../api/client'
 import { formatDay, todayLocal } from '../checkin/dates'
@@ -10,9 +13,20 @@ import { tierColor } from '../checkin/tierColor'
 import { useNotify } from '../components/NotifyContext'
 import { PageHeader } from '../components/PageHeader'
 import { useRebuildSession, useSession } from './queries'
-import type { Session, SessionExercise } from './types'
+import { RestTimer } from './RestTimer'
+import { SetDialog } from './SetDialog'
+import { describeSet, isStrength } from './setFormat'
+import type { LoggedSet, Session, SessionExercise } from './types'
 
 const BUILT_BY = { USER: 'Built by you', RULES: 'Built by the rules engine', AGENT: 'Written by your AI coach' }
+
+// main lifts get the longest rest
+const restSeconds = (item: SessionExercise) => item.mainLift ? 180 : isStrength(item.kind) ? 90 : 60
+
+interface Editing {
+  item: SessionExercise
+  set?: LoggedSet
+}
 
 export function TodayPage() {
   const today = todayLocal()
@@ -66,20 +80,27 @@ export function TodayPage() {
       )}
 
       {session.data?.status === 'READY' && (
-        <ReadySession session={session.data} outOfDate={outOfDate} rebuilding={rebuild.isPending} onRebuild={onRebuild} />
+        <ReadySession date={today} session={session.data} outOfDate={outOfDate} rebuilding={rebuild.isPending} onRebuild={onRebuild} />
       )}
     </>
   )
 }
 
 interface ReadyProps {
+  date: string
   session: Session
   outOfDate: boolean
   rebuilding: boolean
   onRebuild: () => void
 }
 
-function ReadySession({ session, outOfDate, rebuilding, onRebuild }: ReadyProps) {
+function ReadySession({ date, session, outOfDate, rebuilding, onRebuild }: ReadyProps) {
+  const [editing, setEditing] = useState<Editing | null>(null)
+  const [restEndsAt, setRestEndsAt] = useState<number | null>(null)
+
+  // rebuilding would delete the log, so the server refuses it
+  const hasLogs = session.exercises.some((item) => item.logged.length > 0)
+
   return (
     <>
       <Card sx={{ mb: 2 }}>
@@ -99,16 +120,21 @@ function ReadySession({ session, outOfDate, rebuilding, onRebuild }: ReadyProps)
         <Alert
           severity="warning"
           sx={{ mb: 2 }}
-          action={<Button size="small" onClick={onRebuild} disabled={rebuilding}>Rebuild</Button>}
+          action={<Button size="small" onClick={onRebuild} disabled={rebuilding || hasLogs}>Rebuild</Button>}
         >
           Your check-in changed after this session was built.
+          {hasLogs && ' Delete the logged sets to rebuild.'}
         </Alert>
       )}
 
       {rebuilding && <LinearProgress sx={{ mb: 1 }} />}
 
       <Stack spacing={1} sx={{ mb: 2 }}>
-        {session.exercises.map((item) => <ExerciseCard key={item.position} item={item} />)}
+        {session.exercises.map((item) => (
+          <ExerciseCard key={item.position} item={item}
+                        onLog={() => setEditing({ item })}
+                        onEdit={(set) => setEditing({ item, set })} />
+        ))}
       </Stack>
 
       <Card variant="outlined" sx={{ mb: 2 }}>
@@ -124,14 +150,46 @@ function ReadySession({ session, outOfDate, rebuilding, onRebuild }: ReadyProps)
         </CardContent>
       </Card>
 
-      <Button variant="outlined" fullWidth onClick={onRebuild} disabled={rebuilding}>
+      <Button variant="outlined" fullWidth onClick={onRebuild} disabled={rebuilding || hasLogs}>
         Rebuild session
       </Button>
+      {hasLogs && (
+        <Typography variant="caption" color="text.secondary" component="p" sx={{ mt: 0.5, textAlign: 'center' }}>
+          Sets are logged, so this session can no longer be rebuilt.
+        </Typography>
+      )}
+
+      {restEndsAt != null && (
+        <RestTimer
+          key={restEndsAt}
+          endsAt={restEndsAt}
+          onAdd={(seconds) => setRestEndsAt(restEndsAt + seconds * 1000)}
+          onDone={() => setRestEndsAt(null)}
+        />
+      )}
+
+      {editing && (
+        <SetDialog
+          key={`${editing.item.position}-${editing.set?.setNumber ?? 'new'}`}
+          date={date}
+          item={editing.item}
+          set={editing.set}
+          onLogged={() => setRestEndsAt(Date.now() + restSeconds(editing.item) * 1000)}
+          onClose={() => setEditing(null)}
+        />
+      )}
     </>
   )
 }
 
-function ExerciseCard({ item }: { item: SessionExercise }) {
+interface ExerciseProps {
+  item: SessionExercise
+  onLog: () => void
+  onEdit: (set: LoggedSet) => void
+}
+
+function ExerciseCard({ item, onLog, onEdit }: ExerciseProps) {
+  const done = item.logged.length >= item.sets
   return (
     <Card variant="outlined">
       <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
@@ -144,8 +202,8 @@ function ExerciseCard({ item }: { item: SessionExercise }) {
             </Stack>
             <Typography variant="body2">
               {item.sets} × {item.target}
-              {' · '}
-              {item.targetLoadLb != null ? `${item.targetLoadLb} lb` : 'Pick a working weight'}
+              {item.targetLoadLb != null && ` · ${item.targetLoadLb} lb`}
+              {item.targetLoadLb == null && isStrength(item.kind) && ' · Pick a working weight'}
             </Typography>
             {item.substitutedFor && (
               <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
@@ -156,6 +214,26 @@ function ExerciseCard({ item }: { item: SessionExercise }) {
             {item.reason && (
               <Typography variant="caption" color="text.secondary" component="p">{item.reason}</Typography>
             )}
+            <Stack direction="row" spacing={0.75} useFlexGap sx={{ flexWrap: 'wrap', alignItems: 'center', mt: 1 }}>
+              {item.logged.map((set) => (
+                <Chip
+                  key={set.setNumber}
+                  size="small"
+                  color={set.clean ? 'default' : 'warning'}
+                  icon={set.clean ? undefined : <WarningAmberIcon />}
+                  label={`${set.setNumber}: ${describeSet(set, item.kind)}`}
+                  onClick={() => onEdit(set)}
+                  aria-label={`Edit set ${set.setNumber}`}
+                />
+              ))}
+              <Button size="small" startIcon={<AddIcon />} onClick={onLog} disabled={item.logged.length >= 10}
+                      variant={done ? 'text' : 'outlined'}>
+                Log set
+              </Button>
+              <Typography variant="caption" color={done ? 'success.main' : 'text.secondary'}>
+                {item.logged.length}/{item.sets} sets
+              </Typography>
+            </Stack>
           </Box>
         </Stack>
       </CardContent>
