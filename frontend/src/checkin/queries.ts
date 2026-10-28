@@ -25,6 +25,10 @@ export function useSaveCheckIn() {
   return useMutation({
     mutationFn: ({ date, body }: { date: string; body: CheckInRequest }) =>
       api<CheckIn>(`/api/checkins/${date}`, { method: 'PUT', body }),
-    onSuccess: () => client.invalidateQueries({ queryKey: ['checkins'] }),
+    // a session waiting on the check-in can now be built
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: ['checkins'] })
+      client.invalidateQueries({ queryKey: ['sessions'] })
+    },
   })
 }

@@ -1,7 +1,8 @@
 import {
-  Alert, AlertTitle, Card, CardContent, Chip, LinearProgress, Stack, Table, TableBody, TableCell, TableContainer,
+  Alert, AlertTitle, Button, Card, CardContent, Chip, LinearProgress, Stack, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, Typography,
 } from '@mui/material'
+import { Link as RouterLink } from 'react-router'
 import { PageHeader } from '../components/PageHeader'
 import { CheckInForm } from './CheckInForm'
 import { formatDay, todayLocal } from './dates'
@@ -22,7 +23,11 @@ export function CheckInPage() {
       </Typography>
 
       {current.data && (
-        <Alert severity={tierColor(current.data.tier.kind)} sx={{ mb: 2 }}>
+        <Alert
+          severity={tierColor(current.data.tier.kind)}
+          sx={{ mb: 2 }}
+          action={<Button component={RouterLink} to="/today" size="small" color="inherit">Session</Button>}
+        >
           <AlertTitle>Today: {current.data.tier.name} tier</AlertTitle>
           {current.data.tier.description}
         </Alert>
