@@ -9,7 +9,6 @@ import { useState } from 'react'
 import { ApiError } from '../api/client'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { useNotify } from '../components/NotifyContext'
-import { PageHeader } from '../components/PageHeader'
 import { LocationFormDialog } from './LocationFormDialog'
 import { useDeleteLocation, useLocations } from './queries'
 import type { Location } from './types'
@@ -17,7 +16,7 @@ import type { Location } from './types'
 // undefined = form closed, null = new location
 type Editing = Location | null | undefined
 
-export function LocationsPage() {
+export function LocationsSection() {
   const locations = useLocations()
   const remove = useDeleteLocation()
   const notify = useNotify()
@@ -37,10 +36,10 @@ export function LocationsPage() {
 
   return (
     <>
-      <PageHeader
-        title="Locations"
-        action={<Button startIcon={<AddIcon />} variant="contained" onClick={() => setEditing(null)}>New</Button>}
-      />
+      <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+        <Typography variant="h6" component="h2">Locations</Typography>
+        <Button startIcon={<AddIcon />} variant="contained" size="small" onClick={() => setEditing(null)}>New</Button>
+      </Stack>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         Kaimana gyms are shared and read-only. Add your own, such as a home gym, with the equipment you have there.
       </Typography>

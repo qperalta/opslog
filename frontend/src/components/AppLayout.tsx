@@ -1,7 +1,6 @@
-import LogoutIcon from '@mui/icons-material/Logout'
 import PlaceIcon from '@mui/icons-material/Place'
 import {
-  AppBar, BottomNavigation, BottomNavigationAction, Box, Chip, Container, IconButton, Paper, Toolbar, Typography,
+  AppBar, BottomNavigation, BottomNavigationAction, Box, Chip, Container, Paper, Toolbar, Typography,
 } from '@mui/material'
 import { Outlet, useLocation, useNavigate } from 'react-router'
 import emblem from '../assets/emblem.png'
@@ -12,7 +11,7 @@ import { NAV_ITEMS } from './navItems'
 
 /* phone-width frame: top bar, page content, bottom navigation */
 export function AppLayout() {
-  const { user, logout } = useAuth()
+  const { user } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
   // shares the Today screen's query, so it updates on check-in
@@ -36,9 +35,6 @@ export function AppLayout() {
             <Typography variant="body2" sx={{ mr: 1, display: { xs: 'none', sm: 'block' } }}>
               {user?.displayName}
             </Typography>
-            <IconButton color="inherit" onClick={logout} aria-label="Sign out">
-              <LogoutIcon />
-            </IconButton>
           </Toolbar>
         </Container>
       </AppBar>

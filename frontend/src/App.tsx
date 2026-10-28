@@ -5,8 +5,8 @@ import { RequireAuth } from './auth/RequireAuth'
 import { ExercisesPage } from './catalog/ExercisesPage'
 import { HistoryPage } from './history/HistoryPage'
 import { AppLayout } from './components/AppLayout'
-import { LocationsPage } from './locations/LocationsPage'
 import { PlannerPage } from './planner/PlannerPage'
+import { SettingsPage } from './settings/SettingsPage'
 import { TodayPage } from './today/TodayPage'
 
 // paths here must also be listed in SpaController on the server
@@ -23,7 +23,7 @@ const router = createBrowserRouter([
           { path: '/planner', element: <PlannerPage /> },
           { path: '/history', element: <HistoryPage /> },
           { path: '/exercises', element: <ExercisesPage /> },
-          { path: '/locations', element: <LocationsPage /> },
+          { path: '/settings', element: <SettingsPage /> },
         ],
       },
     ],
