@@ -6,6 +6,7 @@ import { CheckInPage } from './checkin/CheckInPage'
 import { ExercisesPage } from './catalog/ExercisesPage'
 import { AppLayout } from './components/AppLayout'
 import { LocationsPage } from './locations/LocationsPage'
+import { PlannerPage } from './planner/PlannerPage'
 
 // paths here must also be listed in SpaController on the server
 const router = createBrowserRouter([
@@ -18,6 +19,7 @@ const router = createBrowserRouter([
         element: <AppLayout />,
         children: [
           { path: '/checkin', element: <CheckInPage /> },
+          { path: '/planner', element: <PlannerPage /> },
           { path: '/exercises', element: <ExercisesPage /> },
           { path: '/locations', element: <LocationsPage /> },
         ],
