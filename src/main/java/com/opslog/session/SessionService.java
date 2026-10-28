@@ -5,6 +5,7 @@ import com.opslog.checkin.CheckIn;
 import com.opslog.checkin.CheckInRepository;
 import com.opslog.checkin.TrainingTier;
 import com.opslog.location.Location;
+import com.opslog.logging.ProgressionService;
 import com.opslog.plan.PlanDay;
 import com.opslog.plan.PlanDayRepository;
 import com.opslog.plan.PlanService;
@@ -15,7 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -33,9 +33,11 @@ public class SessionService {
     private final ProgramService programService;
     private final CheckInRepository checkIns;
     private final SessionGenerator generator;
+    private final ProgressionService progression;
 
     SessionService(TrainingSessionRepository sessions, SessionCatalog catalog, PlanDayRepository days, PlanService planService,
-                   ProgramService programService, CheckInRepository checkIns, SessionGenerator generator) {
+                   ProgramService programService, CheckInRepository checkIns, SessionGenerator generator,
+                   ProgressionService progression) {
         this.sessions = sessions;
         this.catalog = catalog;
         this.days = days;
@@ -43,6 +45,7 @@ public class SessionService {
         this.programService = programService;
         this.checkIns = checkIns;
         this.generator = generator;
+        this.progression = progression;
     }
 
     /* the stored session, or a new one the first time */
@@ -84,7 +87,8 @@ public class SessionService {
                 .map(item -> new PlannedExercise(unproxy(item.getExercise()), item.getSets(), item.isMainLift()))
                 .toList();
 
-        SessionDraft draft = generator.generate(new SessionInput(planned, tier, location, candidates, Map.of()));
+        SessionDraft draft = generator.generate(new SessionInput(planned, tier, location, candidates,
+                progression.plannedLoads(userId, date)));
 
         TrainingSession session = new TrainingSession(userId, date, day.getWorkout(), tier, location, generator.source(),
                 truncate(draft.rationale()));
