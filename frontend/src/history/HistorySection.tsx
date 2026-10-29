@@ -6,7 +6,6 @@ import {
 import { useState } from 'react'
 import { formatDay } from '../checkin/dates'
 import { useExercises, useMuscleGroups } from '../catalog/queries'
-import { PageHeader } from '../components/PageHeader'
 import { describeSet } from '../today/setFormat'
 import { useHistory } from './queries'
 import type { HistoryRow } from './types'
@@ -23,7 +22,7 @@ const NO_FILTERS: Filters = { exerciseId: null, muscleGroupId: '', from: '', to:
 const describe = (row: HistoryRow) =>
   describeSet({ ...row, loggedAt: '' }, row.kind)
 
-export function HistoryPage() {
+export function HistorySection() {
   const [filters, setFilters] = useState<Filters>(NO_FILTERS)
   const [page, setPage] = useState(0)
   const [size, setSize] = useState(20)
@@ -53,8 +52,6 @@ export function HistoryPage() {
 
   return (
     <>
-      <PageHeader title="History" />
-
       <Stack spacing={1.5} sx={{ mb: 2 }}>
         <Autocomplete
           options={options}

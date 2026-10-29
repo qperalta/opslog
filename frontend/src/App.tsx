@@ -3,10 +3,10 @@ import { LoginPage } from './auth/LoginPage'
 import { RegisterPage } from './auth/RegisterPage'
 import { RequireAuth } from './auth/RequireAuth'
 import { ExercisesPage } from './catalog/ExercisesPage'
-import { HistoryPage } from './history/HistoryPage'
 import { AppLayout } from './components/AppLayout'
 import { PlannerPage } from './planner/PlannerPage'
 import { SettingsPage } from './settings/SettingsPage'
+import { StatsPage } from './stats/StatsPage'
 import { TodayPage } from './today/TodayPage'
 
 // paths here must also be listed in SpaController on the server
@@ -21,7 +21,7 @@ const router = createBrowserRouter([
         children: [
           { path: '/today', element: <TodayPage /> },
           { path: '/planner', element: <PlannerPage /> },
-          { path: '/history', element: <HistoryPage /> },
+          { path: '/stats', element: <StatsPage /> },
           { path: '/exercises', element: <ExercisesPage /> },
           { path: '/settings', element: <SettingsPage /> },
         ],
