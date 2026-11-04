@@ -1,9 +1,14 @@
+import { useEffect, type ReactNode } from 'react'
 import { Box, Paper, Typography } from '@mui/material'
-import type { ReactNode } from 'react'
 import logo from '../assets/logo.png'
 
 /* centered card shared by the login and register pages */
 export function AuthCard({ title, children }: { title: string; children: ReactNode }) {
+  // Anytime users get to landing page, does a request to either wake neon up or just check if it's awake.
+  useEffect(() => {
+    fetch('/actuator/health').catch(() => {})
+  }, [])
+
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2, bgcolor: 'background.default' }}>
       <Paper sx={{ p: 3, width: '100%', maxWidth: 400 }}>

@@ -8,6 +8,7 @@ import { applyServerErrors } from '../api/formErrors'
 import { useNotify } from '../components/NotifyContext'
 import { AuthCard } from './AuthCard'
 import { useAuth } from './AuthContext'
+import { WakeNotice } from './WakeNotice'
 
 const schema = z.object({
   email: z.string().trim().min(1, 'Email is required'),
@@ -61,9 +62,10 @@ export function LoginPage() {
           error={!!errors.password}
           helperText={errors.password?.message}
         />
-        <Button type="submit" variant="contained" size="large" disabled={isSubmitting}>
+        <Button type="submit" variant="contained" size="large" loading={isSubmitting}>
           Sign in
         </Button>
+        <WakeNotice pending={isSubmitting} />
         <Typography variant="body2">
           New here?{' '}
           <Link component={RouterLink} to="/register">

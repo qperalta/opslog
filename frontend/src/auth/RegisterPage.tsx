@@ -9,6 +9,7 @@ import { applyServerErrors } from '../api/formErrors'
 import { useNotify } from '../components/NotifyContext'
 import { AuthCard } from './AuthCard'
 import { useAuth } from './AuthContext'
+import { WakeNotice } from "./WakeNotice";
 
 // same rules as RegisterRequest on the server
 const schema = z
@@ -85,9 +86,10 @@ export function RegisterPage() {
           error={!!errors.confirmPassword}
           helperText={errors.confirmPassword?.message}
         />
-        <Button type="submit" variant="contained" size="large" disabled={isSubmitting}>
+        <Button type="submit" variant="contained" size="large" loading={isSubmitting}>
           Create account
         </Button>
+        <WakeNotice pending={isSubmitting} />
         <Typography variant="body2">
           Already have an account?{' '}
           <Link component={RouterLink} to="/login">
