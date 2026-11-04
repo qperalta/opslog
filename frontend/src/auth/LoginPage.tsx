@@ -7,6 +7,7 @@ import { z } from 'zod'
 import { applyServerErrors } from '../api/formErrors'
 import { useNotify } from '../components/NotifyContext'
 import { AuthCard } from './AuthCard'
+import { PasswordField } from './PasswordField'
 import { useAuth } from './AuthContext'
 import { WakeNotice } from './WakeNotice'
 
@@ -54,9 +55,8 @@ export function LoginPage() {
           error={!!errors.email}
           helperText={errors.email?.message}
         />
-        <TextField
+        <PasswordField
           label="Password"
-          type="password"
           autoComplete="current-password"
           {...register('password')}
           error={!!errors.password}

@@ -8,8 +8,9 @@ import { api } from '../api/client'
 import { applyServerErrors } from '../api/formErrors'
 import { useNotify } from '../components/NotifyContext'
 import { AuthCard } from './AuthCard'
+import { PasswordField } from "./PasswordField";
 import { useAuth } from './AuthContext'
-import { WakeNotice } from "./WakeNotice";
+import { WakeNotice } from "./WakeNotice"
 
 // same rules as RegisterRequest on the server
 const schema = z
@@ -70,17 +71,15 @@ export function RegisterPage() {
           error={!!errors.displayName}
           helperText={errors.displayName?.message}
         />
-        <TextField
+        <PasswordField
           label="Password"
-          type="password"
           autoComplete="new-password"
           {...register('password')}
           error={!!errors.password}
           helperText={errors.password?.message ?? 'At least 8 characters'}
         />
-        <TextField
+        <PasswordField
           label="Confirm password"
-          type="password"
           autoComplete="new-password"
           {...register('confirmPassword')}
           error={!!errors.confirmPassword}
