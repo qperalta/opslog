@@ -8,6 +8,7 @@ import { useAuth } from '../auth/AuthContext'
 import { todayLocal } from '../checkin/dates'
 import { useCheckIn } from '../checkin/queries'
 import { NAV_ITEMS } from './navItems'
+import { WakeBar } from './WakeBar'
 
 /* phone-width frame: top bar, page content, bottom navigation */
 export function AppLayout() {
@@ -36,6 +37,7 @@ export function AppLayout() {
               {user?.displayName}
             </Typography>
           </Toolbar>
+          <WakeBar />
         </Container>
       </AppBar>
       <Container maxWidth="sm" sx={{ py: 2 }}>
