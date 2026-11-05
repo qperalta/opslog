@@ -9,6 +9,7 @@ import { todayLocal } from '../checkin/dates'
 import { useCheckIn } from '../checkin/queries'
 import { NAV_ITEMS } from './navItems'
 import { WakeBar } from './WakeBar'
+import { useKeepAwake } from './useKeepAwake.ts'
 
 /* phone-width frame: top bar, page content, bottom navigation */
 export function AppLayout() {
@@ -19,6 +20,8 @@ export function AppLayout() {
   const checkIn = useCheckIn(todayLocal())
   const place = checkIn.data?.location?.name
   const current = NAV_ITEMS.find((item) => location.pathname.startsWith(item.path))?.path ?? false
+
+  useKeepAwake()
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', pb: 9 }}>
