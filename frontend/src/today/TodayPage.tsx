@@ -15,6 +15,7 @@ import { formatDay, todayLocal } from '../checkin/dates'
 import { useCheckIn } from '../checkin/queries'
 import { TierRules } from '../checkin/TierRules'
 import { tierColor } from '../checkin/tierColor'
+import { HeaderStats, type HeaderStat } from '../components/HeaderStat'
 import { useNotify } from '../components/NotifyContext'
 import { PageHeader } from '../components/PageHeader'
 import { useRebuildSession, useSession } from './queries'
@@ -27,6 +28,43 @@ const BUILT_BY = { USER: 'Built by you', RULES: 'Built by the rules engine', AGE
 
 // main lifts get the longest rest
 const restSeconds = (item: SessionExercise) => item.mainLift ? 180 : isStrength(item.kind) ? 90 : 60
+
+const subtitleFor = (session: Session | undefined, noProgram: boolean)=> {
+  if(noProgram) return 'No program picked yet'
+  if(session?.status === 'REST') return 'Rest day'
+  if(session?.status === 'NEEDS_CHECKIN') return `${session.workout?.name ?? 'Training' } today · check in to build it`
+  if(session?.status === 'READY') {
+    const name = session.workout?.name ?? 'Session'
+    return session.source ? `${name} · ${BUILT_BY[session.source]}` : name
+  }
+  return undefined
+}
+
+const sessionStat = (session: Session): HeaderStat[] => {
+  const logged = session.exercises.reduce((sum, item) => sum + item.logged.length, 0)
+  const planned = session.exercises.reduce((sum, item) => sum + item.sets, 0)
+  const tier = session.tier && (
+    <>
+      <Box
+        component="span"
+        sx={{
+          display: 'inline-block',
+          width: 8,
+          height: 8,
+          borderRadius: '50%',
+          mr: 1,
+          verticalAlign: 'middle',
+          bgcolor: `${tierColor(session.tierKind ?? '')}.main`
+        }} />
+      {session.tier.name}
+    </>
+  )
+  return [
+    { label: 'Tier', value: tier ?? '-' },
+    { label: 'Exercise', value: session.exercises.length },
+    { label: 'Sets', value: `${logged} / ${planned}` }
+  ]
+}
 
 interface Editing {
   item: SessionExercise
@@ -56,10 +94,13 @@ export function TodayPage() {
 
   return (
     <>
-      <PageHeader title="Today" />
-      <Typography color="text.secondary" sx={{ mt: -1.5, mb: 2 }}>
-        {formatDay(today, { weekday: 'long', month: 'long', day: 'numeric' })}
-      </Typography>
+      <PageHeader
+        eyebrow={formatDay(today, { weekday: 'long', month: 'long', day: 'numeric' })}
+        title="Today"
+        subtitle={subtitleFor(session.data, noProgram)}
+      >
+        {session.data?.status === 'READY' && <HeaderStats stats={sessionStat(session.data)} />}
+      </PageHeader>
 
       {/* the check-in card shows until today's check-in exists */}
       {checkIn.isError && <Alert severity="error" sx={{ mb: 2 }}>{checkIn.error.message}</Alert>}
@@ -131,19 +172,6 @@ function ReadySession({ date, session, outOfDate, rebuilding, onRebuild }: Ready
 
   return (
     <>
-      <Card sx={{ mb: 2 }}>
-        <CardContent>
-          <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 0.5 }}>
-            <Typography variant="h6" component="h2">{session.workout?.name ?? 'Session'}</Typography>
-            {session.tier && <Chip size="small" color={tierColor(session.tierKind ?? '')} label={session.tier.name} />}
-          </Stack>
-          <Typography variant="body2" color="text.secondary">
-            {session.location?.name ?? 'No location'} · {session.exercises.length} exercises
-            {session.source && ` · ${BUILT_BY[session.source]}`}
-          </Typography>
-        </CardContent>
-      </Card>
-
       {outOfDate && (
         <Alert
           severity="warning"
