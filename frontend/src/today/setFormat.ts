@@ -4,6 +4,8 @@ import type { LoggedSet, SessionExercise } from './types'
 export const isCardio = (kind: string) => kind === 'CARDIO'
 export const isStrength = (kind: string) => kind === 'STRENGTH'
 
+export const measureLabel = (kind: string) => isStrength(kind) ? 'Reps' : isCardio(kind) ? 'Min' : 'Sec'
+
 export function describeSet(set: LoggedSet, kind: string) {
   const measure = isStrength(kind)
     ? `${set.reps} reps`

@@ -1,4 +1,3 @@
-import AddIcon from '@mui/icons-material/Add'
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
@@ -20,9 +19,10 @@ import { useNotify } from '../components/NotifyContext'
 import { PageHeader } from '../components/PageHeader'
 import { useRebuildSession, useSession } from './queries'
 import { RestTimer } from './RestTimer'
-import { SetDialog } from './SetDialog'
 import { clock, describeSet, isStrength, restSeconds } from './setFormat'
-import type { LoggedSet, Session, SessionExercise } from './types'
+import type { Session, SessionExercise } from './types'
+import { useWorkoutMode } from './useWorkoutMode'
+import { WorkoutCard } from './WorkoutCard'
 
 const BUILT_BY = { USER: 'Built by you', RULES: 'Built by the rules engine', AGENT: 'Written by your AI coach' }
 
@@ -61,11 +61,6 @@ const sessionStat = (session: Session): HeaderStat[] => {
     { label: 'Exercise', value: session.exercises.length },
     { label: 'Sets', value: `${logged} / ${planned}` }
   ]
-}
-
-interface Editing {
-  item: SessionExercise
-  set?: LoggedSet
 }
 
 export function TodayPage() {
@@ -161,8 +156,9 @@ interface ReadyProps {
 }
 
 function ReadySession({ date, session, outOfDate, rebuilding, onRebuild }: ReadyProps) {
-  const [editing, setEditing] = useState<Editing | null>(null)
   const [restEndsAt, setRestEndsAt] = useState<number | null>(null)
+  const workout = useWorkoutMode(date)
+  const notify = useNotify()
 
   // rebuilding would delete the log, so the server refuses it
   const hasLogs = session.exercises.some((item) => item.logged.length > 0)
@@ -182,13 +178,34 @@ function ReadySession({ date, session, outOfDate, rebuilding, onRebuild }: Ready
 
       {rebuilding && <LinearProgress sx={{ mb: 1 }} />}
 
-      <Stack spacing={1} sx={{ mb: 2 }}>
-        {session.exercises.map((item) => (
-          <ExerciseCard key={item.position} item={item}
-                        onLog={() => setEditing({ item })}
-                        onEdit={(set) => setEditing({ item, set })} />
-        ))}
-      </Stack>
+      {workout.active ? (
+        <>
+          <Stack spacing={1.5} sx={{ mb: 2 }}>
+            {session.exercises.map((item) => (
+              <WorkoutCard key={item.position} date={date} item={item}
+                           onLogged={() => setRestEndsAt(Date.now() + restSeconds(item) * 1000)} />
+            ))}
+          </Stack>
+          <Button variant="contained" fullWidth sx={{ mb: 2 }} onClick={() => {
+            setRestEndsAt(null)
+            workout.finish()
+            notify('Workout finished')
+          }}>
+            Finish workout
+          </Button>
+        </>
+      ) : (
+        <>
+          <Button variant="contained" size="large" fullWidth sx={{ mb: 2 }} onClick={workout.start}>
+            {hasLogs ? 'Resume workout' : 'Start workout'}
+          </Button>
+          <Stack spacing={1} sx={{ mb: 2 }}>
+            {session.exercises.map((item) => (
+              <ExerciseCard key={item.position} item={item} />
+            ))}
+          </Stack>
+        </>
+      )}
 
       <Card variant="outlined" sx={{ mb: 2 }}>
         <CardContent>
@@ -203,13 +220,17 @@ function ReadySession({ date, session, outOfDate, rebuilding, onRebuild }: Ready
         </CardContent>
       </Card>
 
-      <Button variant="outlined" fullWidth onClick={onRebuild} disabled={rebuilding || hasLogs}>
-        Rebuild session
-      </Button>
-      {hasLogs && (
-        <Typography variant="caption" color="text.secondary" component="p" sx={{ mt: 0.5, textAlign: 'center' }}>
-          Sets are logged, so this session can no longer be rebuilt.
-        </Typography>
+      {!workout.active && (
+        <>
+          <Button variant="outlined" fullWidth onClick={onRebuild} disabled={rebuilding || hasLogs}>
+            Rebuild session
+          </Button>
+          {hasLogs && (
+            <Typography variant="caption" color="text.secondary" component="p" sx={{ mt: 0.5, textAlign: 'center' }}>
+              Sets are logged, so this session can no longer be rebuilt.
+            </Typography>
+          )}
+        </>
       )}
 
       {restEndsAt != null && (
@@ -221,27 +242,12 @@ function ReadySession({ date, session, outOfDate, rebuilding, onRebuild }: Ready
         />
       )}
 
-      {editing && (
-        <SetDialog
-          key={`${editing.item.position}-${editing.set?.setNumber ?? 'new'}`}
-          date={date}
-          item={editing.item}
-          set={editing.set}
-          onLogged={() => setRestEndsAt(Date.now() + restSeconds(editing.item) * 1000)}
-          onClose={() => setEditing(null)}
-        />
-      )}
     </>
   )
 }
 
-interface ExerciseProps {
-  item: SessionExercise
-  onLog: () => void
-  onEdit: (set: LoggedSet) => void
-}
-
-function ExerciseCard({ item, onLog, onEdit }: ExerciseProps) {
+/* the overview before the workout starts; logging happens in workout mode */
+function ExerciseCard({ item }: { item: SessionExercise }) {
   const done = item.logged.length >= item.sets
   return (
     <Card variant="outlined">
@@ -269,21 +275,15 @@ function ExerciseCard({ item, onLog, onEdit }: ExerciseProps) {
               <Typography variant="caption" color="text.secondary" component="p">{item.reason}</Typography>
             )}
             <Stack direction="row" spacing={0.75} useFlexGap sx={{ flexWrap: 'wrap', alignItems: 'center', mt: 1 }}>
-              {item.logged.map((set) => (
+              {item.logged.map((set, i) => (
                 <Chip
                   key={set.setNumber}
                   size="small"
                   color={set.clean ? 'default' : 'warning'}
                   icon={set.clean ? undefined : <WarningAmberIcon />}
-                  label={`${set.setNumber}: ${describeSet(set, item.kind)}`}
-                  onClick={() => onEdit(set)}
-                  aria-label={`Edit set ${set.setNumber}`}
+                  label={`${i + 1}: ${describeSet(set, item.kind)}`}
                 />
               ))}
-              <Button size="small" startIcon={<AddIcon />} onClick={onLog} disabled={item.logged.length >= 10}
-                      variant={done ? 'text' : 'outlined'}>
-                Log set
-              </Button>
               <Typography variant="caption" color={done ? 'success.main' : 'text.secondary'}>
                 {item.logged.length}/{item.sets} sets
               </Typography>
