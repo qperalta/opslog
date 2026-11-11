@@ -7,6 +7,7 @@ import {
 import { useState } from 'react'
 import { addDays, formatDay, todayLocal } from '../checkin/dates'
 import { labelOf } from '../components/format'
+import { HeaderStats } from '../components/HeaderStat'
 import { PageHeader } from '../components/PageHeader'
 import { DayDialog } from './DayDialog'
 import { ProgramForm } from './ProgramForm'
@@ -27,10 +28,33 @@ export function PlannerPage() {
   const template = programs.data?.find((item) => item.id === program.data?.template.id)
   const workoutsById = new Map<number, Workout>(programs.data?.flatMap((item) => item.workouts).map((w) => [w.id, w]) ?? [])
   const thisWeek = week.data && today >= week.data.start && today <= week.data.end
+  const workoutCount = week.data?.days.filter((day) => day.workout).length ?? 0
+  const lockedCount = week.data?.days.filter((day) => day.locked).length ?? 0
 
   return (
     <>
-      <PageHeader title="Planner" />
+      <PageHeader
+        eyebrow="Program"
+        title="Planner"
+        subtitle={program.data ? program.data.template.name : 'Pick a program to plan your week'}
+        action={program.data && !changing && (
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => setChanging(true)}
+          >
+            Change
+          </Button>
+        )}
+      >
+        {template && week.data && (
+          <HeaderStats stats={[
+            { label: 'Per week', value: template.trainingDays.length },
+            { label: 'Planned', value: workoutCount },
+            { label: 'Locked', value: lockedCount }
+          ]} />
+        )}
+      </PageHeader>
 
       {program.isPending && <LinearProgress />}
       {program.isError && <Alert severity="error">{program.error.message}</Alert>}
@@ -49,10 +73,6 @@ export function PlannerPage() {
               </>
             ) : (
               <Stack spacing={1}>
-                <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Typography variant="h6" component="h2">{program.data.template.name}</Typography>
-                  <Button size="small" onClick={() => setChanging(true)}>Change</Button>
-                </Stack>
                 {template && <Typography variant="body2" color="text.secondary">{template.description}</Typography>}
                 <Stack direction="row" spacing={0.5} sx={{ flexWrap: 'wrap' }}>
                   {template?.trainingDays.map((day) => (
