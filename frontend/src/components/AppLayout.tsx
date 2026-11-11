@@ -1,6 +1,6 @@
 import PlaceIcon from '@mui/icons-material/Place'
 import {
-  AppBar, BottomNavigation, BottomNavigationAction, Box, Chip, Container, Paper, Toolbar, Typography,
+  AppBar, BottomNavigation, BottomNavigationAction, Box, Chip, Container, Paper, Toolbar, Typography, alpha
 } from '@mui/material'
 import { Outlet, useLocation, useNavigate } from 'react-router'
 import emblem from '../assets/emblem.png'
@@ -24,7 +24,7 @@ export function AppLayout() {
   useKeepAwake()
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', pb: 9 }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', pb: 11 }}>
       <AppBar position="sticky">
         <Container maxWidth="sm" disableGutters>
           <Toolbar>
@@ -46,14 +46,32 @@ export function AppLayout() {
       <Container maxWidth="sm" sx={{ py: 2 }}>
         <Outlet />
       </Container>
-      <Paper elevation={3} sx={{ position: 'fixed', bottom: 0, left: 0, right: 0 }}>
-        <Container maxWidth="sm" disableGutters>
-          <BottomNavigation showLabels value={current} onChange={(_, path: string) => navigate(path)}>
-            {NAV_ITEMS.map(({ path, label, Icon }) => (
-              <BottomNavigationAction key={path} value={path} label={label} icon={<Icon />} sx={{ minWidth: 0, px: 0.5 }} />
-            ))}
-          </BottomNavigation>
-        </Container>
+      <Paper
+        elevation={6}
+        sx={(theme) => ({
+          position: 'fixed', bottom: 12, left: 12, right: 12, mx: 'auto', maxWidth: 560, zIndex: 'appBar',
+          borderRadius: 999, overflow: 'hidden', border: 1, borderColor: 'divider',
+          bgcolor: alpha(theme.palette.background.paper, 0.7),
+          backgroundImage: 'none',
+          backdropFilter: 'blur(12px)'
+        })}
+      >
+        <BottomNavigation
+          showLabels
+          value={current}
+          onChange={(_, path: string) => navigate(path)}
+          sx={{ bgcolor: 'transparent' }}
+        >
+          {NAV_ITEMS.map(({ path, label, Icon }) => (
+            <BottomNavigationAction
+              key={path}
+              value={path}
+              label={label}
+              icon={<Icon />}
+              sx={{ minWidth: 0, px: 0.5 }}
+            />
+          ))}
+        </BottomNavigation>
       </Paper>
     </Box>
   )

@@ -26,7 +26,7 @@ export function RestTimer({ endsAt, onAdd, onDone }: Props) {
 
   return (
     <Paper elevation={6} role="timer" aria-live="polite"
-           sx={{ position: 'sticky', bottom: 72, mt: 2, px: 2, py: 1.5, zIndex: 1 }}>
+           sx={{ position: 'sticky', bottom: 84, mt: 2, px: 2, py: 1.5, zIndex: 1 }}>
       <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
         <Typography sx={{ flexGrow: 1, fontWeight: 600 }} color={left === 0 ? 'success.main' : 'text.primary'}>
           {left === 0 ? 'Rest done, next set' : `Rest ${clock(left)}`}
