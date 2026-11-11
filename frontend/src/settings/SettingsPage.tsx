@@ -10,7 +10,11 @@ export function SettingsPage() {
 
   return (
     <>
-      <PageHeader title="Settings" />
+      <PageHeader
+        eyebrow="Setup"
+        title="Settings"
+        subtitle="Your account and training locations"
+      />
 
       <Typography variant="h6" component="h2" sx={{ mb: 1 }}>Account</Typography>
       <Card sx={{ mb: 3 }}>

@@ -93,7 +93,9 @@ export function ExercisesPage() {
   return (
     <>
       <PageHeader
+        eyebrow="Catalog"
         title="Exercises"
+        subtitle="Search, filter and add your own exercises"
         action={<Button startIcon={<AddIcon />} variant="contained" onClick={() => setEditing(null)}>New</Button>}
       />
       <Stack spacing={1.5} sx={{ mb: 2 }}>

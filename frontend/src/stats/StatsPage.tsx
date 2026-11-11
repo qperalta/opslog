@@ -16,7 +16,11 @@ export function StatsPage() {
 
   return (
     <>
-      <PageHeader title="Stats" />
+      <PageHeader
+        eyebrow="Progress"
+        title="Stats"
+        subtitle="Your training trends and logged sessions"
+      />
       <Tabs value={tab} onChange={(_, value: string) => setParams({ tab: value }, { replace: true })}
             variant="fullWidth" sx={{ mb: 2, borderBottom: 1, borderColor: 'divider' }}>
         {TABS.map((item) => (
