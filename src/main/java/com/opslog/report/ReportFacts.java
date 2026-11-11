@@ -23,7 +23,7 @@ class ReportFacts {
             JOIN training_tiers t ON t.id = s.tier_id
             LEFT JOIN template_days td ON td.id = s.template_day_id
             LEFT JOIN locations l ON l.id = s.location_id
-            LEFT JOIN session_exercises se ON se.session_id = s.id
+            LEFT JOIN session_exercises se ON se.session_id = s.id AND NOT se.skipped
             LEFT JOIN exercises e ON e.id = se.exercise_id
             LEFT JOIN movement_patterns mp ON mp.id = e.movement_pattern_id
             LEFT JOIN logged_sets ls ON ls.session_exercise_id = se.id

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
-import type { LoggedSet, LoggedSetBody, Session } from './types'
+import type { LoggedSet, LoggedSetBody, Session, SessionExercise } from './types'
 
 // the first call builds the session; later calls return the stored one
 export const useSession = (date: string) =>
@@ -30,6 +30,15 @@ export function useSaveSet() {
       ? api<LoggedSet>(setsPath(target), { method: 'POST', body })
       : api<LoggedSet>(`${setsPath(target)}/${target.setNumber}`, { method: 'PUT', body }),
     onSuccess: (_, { target }) => client.invalidateQueries({ queryKey: ['sessions', target.date] }),
+  })
+}
+
+export function useSetSkipped() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({ date, position, skipped }: { date: string, position: number, skipped: boolean }) =>
+      api<SessionExercise>(`/api/sessions/${date}/exercises/${position}/skipped`, { method: 'PUT', body: { skipped } }),
+    onSuccess: (_, { date }) => client.invalidateQueries({ queryKey: ['sessions', date] }),
   })
 }
 

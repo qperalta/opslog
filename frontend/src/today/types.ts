@@ -14,6 +14,7 @@ export interface SessionExercise {
   mainLift: boolean
   substitutedFor: Lookup | null
   reason: string | null
+  skipped: boolean
   logged: LoggedSet[]
 }
 

@@ -51,6 +51,9 @@ public class SessionExercise {
     @Column(length=MAX_REASON)
     private String reason;
 
+    @Column(nullable=false)
+    private boolean skipped;
+
     @OneToMany(mappedBy="sessionExercise", cascade=CascadeType.ALL, orphanRemoval=true)
     @OrderBy("setNumber")
     private List<LoggedSet> loggedSets = new ArrayList<>();
@@ -82,6 +85,7 @@ public class SessionExercise {
     public int getSets() { return sets; }
     public BigDecimal getTargetLoadLb() { return targetLoadLb; }
     public boolean isMainLift() { return mainLift; }
+    public boolean isSkipped() { return skipped; }
     public String getReason() { return reason; }
 
     public List<LoggedSet> getLoggedSets() { return Collections.unmodifiableList(loggedSets); }
@@ -90,8 +94,17 @@ public class SessionExercise {
 
     public boolean hasLoggedSets() { return !loggedSets.isEmpty(); }
 
+    /* a skipped exercise has nothing logged, so the reports never count half of one */
+    public void skip() {
+        Require.that(loggedSets.isEmpty(), "Delete the logged sets before skipping this exercise");
+        skipped = true;
+    }
+
+    public void reactivate() { skipped = false; }
+
     /* numbers continue after the highest one, so a deleted set leaves a gap */
     public LoggedSet logSet(Integer reps, Integer durationSeconds, BigDecimal loadLb, boolean clean) {
+        Require.that(!skipped, "Re-activate this exercise before logging a set");
         int next = loggedSets.stream().mapToInt(LoggedSet::getSetNumber).max().orElse(0) + 1;
         Require.that(next <= LoggedSet.MAX_SETS, "An exercise can have at most " + LoggedSet.MAX_SETS + " logged sets");
         LoggedSet set = new LoggedSet(this, next, reps, durationSeconds, loadLb, clean);

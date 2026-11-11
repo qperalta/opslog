@@ -40,7 +40,7 @@ const subtitleFor = (session: Session | undefined, noProgram: boolean)=> {
 
 const sessionStat = (session: Session): HeaderStat[] => {
   const logged = session.exercises.reduce((sum, item) => sum + item.logged.length, 0)
-  const planned = session.exercises.reduce((sum, item) => sum + item.sets, 0)
+  const planned = session.exercises.reduce((sum, item) => sum + (item.skipped ? 0 : item.sets), 0)
   const tier = session.tier && (
     <>
       <Box
@@ -252,7 +252,7 @@ function ReadySession({ date, session, outOfDate, rebuilding, onRebuild }: Ready
 function ExerciseCard({ item }: { item: SessionExercise }) {
   const done = item.logged.length >= item.sets
   return (
-    <Card variant="outlined">
+    <Card variant="outlined" sx={{ opacity: item.skipped ? 0.6 : 1 }}>
       <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
         <Stack direction="row" spacing={1.5} sx={{ alignItems: 'flex-start' }}>
           <Typography color="text.secondary" sx={{ width: 20, flexShrink: 0, fontWeight: 600 }}>{item.position}</Typography>
@@ -260,6 +260,7 @@ function ExerciseCard({ item }: { item: SessionExercise }) {
             <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
               <Typography sx={{ fontWeight: 600 }}>{item.name}</Typography>
               {item.mainLift && <Chip size="small" variant="outlined" label="Main lift" />}
+              {item.skipped && <Chip size="small" label="Skipped" />}
             </Stack>
             <Typography variant="body2">
               {item.sets} × {item.target}

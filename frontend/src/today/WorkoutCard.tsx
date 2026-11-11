@@ -1,8 +1,12 @@
 import AddIcon from '@mui/icons-material/Add'
+import BlockIcon from '@mui/icons-material/Block'
+import ReplayIcon from '@mui/icons-material/Replay'
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz'
 import { Box, Button, Card, CardContent, Chip, Stack, Typography } from '@mui/material'
 import { useState } from 'react'
+import { useNotify } from '../components/NotifyContext'
 import { HoldTimer } from './HoldTimer'
+import { useSetSkipped } from './queries'
 import { clock, fixedTarget, isStrength, measureLabel, restSeconds } from './setFormat'
 import { SetRow } from './SetRow'
 import type { SessionExercise } from './types'
@@ -18,12 +22,38 @@ const MAX_SETS = 10
 
 /* one row per planned set plus any added with + Set; only the first set not yet logged takes input */
 export function WorkoutCard({ date, item, onLogged }: Props) {
+  const skip = useSetSkipped()
+  const notify = useNotify()
   const [added, setAdded] = useState(0)
   // seconds from the hold timer, and a count that remounts the active row so it takes them
   const [held, setHeld] = useState({ seconds: '', count: 0 })
   const rows = Math.min(Math.max(item.sets + added, item.logged.length), MAX_SETS)
   const open = rows - item.logged.length
   const holdSeconds = item.kind === 'TIMED' ? Number(fixedTarget(item)) : 0
+
+  const setSkipped = (skipped: boolean) =>
+    skip.mutate({ date, position: item.position, skipped }, {
+      onSuccess: () => notify(skipped ? `Skipped ${item.name}` : `${item.name} is back on`),
+      onError: (failure) => notify(failure.message, 'error'),
+    })
+
+  if (item.skipped) {
+    return (
+      <Card variant="outlined" sx={{ bgcolor: 'action.hover' }}>
+        <CardContent>
+          <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
+            <Typography sx={{ fontWeight: 600, color: 'text.secondary' }}>{item.name}</Typography>
+            <Chip size="small" icon={<BlockIcon />} label="Skipped" />
+          </Stack>
+          <Typography variant="body2" color="text.secondary">{item.sets} × {item.target}</Typography>
+          <Button size="small" variant="outlined" startIcon={<ReplayIcon />} sx={{ mt: 1.5 }}
+                  onClick={() => setSkipped(false)} disabled={skip.isPending}>
+            Re-activate
+          </Button>
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <Card variant="outlined">
@@ -79,6 +109,12 @@ export function WorkoutCard({ date, item, onLogged }: Props) {
                   onClick={() => setAdded(added + 1)}>
             Set
           </Button>
+          {item.logged.length === 0 && (
+            <Button size="small" color="inherit" startIcon={<BlockIcon />} onClick={() => setSkipped(true)}
+                    disabled={skip.isPending}>
+              Skip
+            </Button>
+          )}
         </Stack>
       </CardContent>
     </Card>

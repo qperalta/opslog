@@ -6,6 +6,7 @@ import com.opslog.checkin.CheckInRepository;
 import com.opslog.checkin.TrainingTier;
 import com.opslog.location.Location;
 import com.opslog.logging.ProgressionService;
+import com.opslog.logging.SessionExerciseNotFoundException;
 import com.opslog.plan.PlanDay;
 import com.opslog.plan.PlanDayRepository;
 import com.opslog.plan.PlanService;
@@ -63,6 +64,16 @@ public class SessionService {
             sessions.flush();
         });
         return build(userId, date);
+    }
+
+    /* skip or re-activate one exercise; only the user's own stored session */
+    public SessionExerciseResponse setSkipped(long userId, LocalDate date, int position, boolean skipped) {
+        SessionExercise item = sessions.findByUserIdAndDate(userId, date)
+                .flatMap(session -> session.findExercise(position))
+                .orElseThrow(() -> new SessionExerciseNotFoundException(date, position));
+        if(skipped) item.skip();
+        else item.reactivate();
+        return SessionExerciseResponse.from(item);
     }
 
     private SessionResponse build(long userId, LocalDate date) {
