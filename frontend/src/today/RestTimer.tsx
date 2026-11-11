@@ -1,13 +1,12 @@
 import { Button, Paper, Stack, Typography } from '@mui/material'
 import { useEffect, useState } from 'react'
+import { clock } from './setFormat'
 
 interface Props {
   endsAt: number
   onAdd: (seconds: number) => void
   onDone: () => void
 }
-
-const clock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
 
 /* counts down from an end time, so a background tab stays accurate; sits above the bottom nav */
 export function RestTimer({ endsAt, onAdd, onDone }: Props) {

@@ -21,13 +21,10 @@ import { PageHeader } from '../components/PageHeader'
 import { useRebuildSession, useSession } from './queries'
 import { RestTimer } from './RestTimer'
 import { SetDialog } from './SetDialog'
-import { describeSet, isStrength } from './setFormat'
+import { clock, describeSet, isStrength, restSeconds } from './setFormat'
 import type { LoggedSet, Session, SessionExercise } from './types'
 
 const BUILT_BY = { USER: 'Built by you', RULES: 'Built by the rules engine', AGENT: 'Written by your AI coach' }
-
-// main lifts get the longest rest
-const restSeconds = (item: SessionExercise) => item.mainLift ? 180 : isStrength(item.kind) ? 90 : 60
 
 const subtitleFor = (session: Session | undefined, noProgram: boolean)=> {
   if(noProgram) return 'No program picked yet'
@@ -260,6 +257,7 @@ function ExerciseCard({ item, onLog, onEdit }: ExerciseProps) {
               {item.sets} × {item.target}
               {item.targetLoadLb != null && ` · ${item.targetLoadLb} lb`}
               {item.targetLoadLb == null && isStrength(item.kind) && ' · Pick a working weight'}
+              {` · rest ${clock(restSeconds(item))}`}
             </Typography>
             {item.substitutedFor && (
               <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
