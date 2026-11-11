@@ -46,3 +46,11 @@ export const useTrainingRows = (range: ReportRange | null) =>
       error: results.find((result) => result.error)?.error ?? null,
     }),
   })
+
+export const useDaySets = (date: string, enabled: boolean) =>
+  useQuery({
+    queryKey: ['history', { from: date, to: date, page: 0, size: 100 }],
+    queryFn: () => api<Page<HistoryRow>>(`/api/history${toQuery({ from: date, to: date, size: 100 })}`),
+    select: (page) => page.items,
+    enabled,
+  })

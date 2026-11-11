@@ -1,4 +1,5 @@
-import { addDays } from '../checkin/dates'
+import { addDays, formatDay } from '../checkin/dates'
+import type { HistoryRow } from '../history/types'
 import type { ReportRange, TrainingReportRow } from './types'
 
 export type PeriodKey = 'today' | 'week' | 'month' | 'year' | 'all'
@@ -15,6 +16,11 @@ export interface Totals {
   workouts: number
   sets: number
   lifted: number
+}
+
+export interface Bucket {
+  label: string
+  value: number
 }
 
 // the report endpoints take at most 366 days per request
@@ -83,4 +89,57 @@ export function totals(rows: TrainingReportRow[], range: ReportRange): Totals {
       sets: sum.sets + row.setsLogged,
       lifted: sum.lifted + row.volumeLb,
     }), { workouts: 0, sets: 0, lifted: 0 })
+}
+
+function monthKeys(from: string, to: string) {
+  const keys: string[] = []
+  const start = toDate(from)
+  for (let i = 0; ; i++) {
+    const key = ymd(new Date(start.getFullYear(), start.getMonth() + i, 1)).slice(0, 7)
+    if (key > to.slice(0, 7)) return keys
+    keys.push(key)
+  }
+}
+
+/* week: Mon-Sun, month: each day, year: each month, all: each month or each year past two years */
+function bucketPlan(key: Exclude<PeriodKey, 'today'>, range: ReportRange) {
+  if (key === 'week' || key === 'month') {
+    const start = range.from
+    const days = key === 'week' ? 7 : lastDay(toDate(start).getFullYear(), toDate(start).getMonth())
+    const dates = Array.from({ length: days }, (_, i) => addDays(start, i))
+    const options: Intl.DateTimeFormatOptions = key === 'week' ? { weekday: 'short' } : { day: 'numeric' }
+    return { keyOf: (date: string) => date, keys: dates.map((date) => ({ key: date, label: formatDay(date, options) })) }
+  }
+  const from = key === 'year' ? range.from : range.from.slice(0, 7) + '-01'
+  const to = key === 'year' ? range.from.slice(0, 4) + '-12-31' : range.to
+  const months = monthKeys(from, to)
+  if (months.length > 24) {
+    const years = Array.from(new Set(months.map((month) => month.slice(0, 4))))
+    return { keyOf: (date: string) => date.slice(0, 4), keys: years.map((year) => ({ key: year, label: year })) }
+  }
+  const options: Intl.DateTimeFormatOptions = key === 'year' ? { month: 'short' } : { month: 'short', year: '2-digit' }
+  return {
+    keyOf: (date: string) => date.slice(0, 7),
+    keys: months.map((month) => ({ key: month, label: formatDay(`${month}-01`, options) })),
+  }
+}
+
+export function liftedBuckets(key: Exclude<PeriodKey, 'today'>, range: ReportRange, rows: TrainingReportRow[]): Bucket[] {
+  const plan = bucketPlan(key, range)
+  const sums = new Map<string, number>()
+  for (const row of rows) {
+    if (!inRange(row.date, range)) continue
+    const bucket = plan.keyOf(row.date)
+    sums.set(bucket, (sums.get(bucket) ?? 0) + row.volumeLb)
+  }
+  return plan.keys.map(({ key: bucket, label }) => ({ label, value: sums.get(bucket) ?? 0 }))
+}
+
+/* bodyweight and timed sets lift 0 lb, so they drop out */
+export function liftedByExercise(sets: HistoryRow[]): Bucket[] {
+  const sums = new Map<string, number>()
+  for (const set of sets) {
+    sums.set(set.exercise, (sums.get(set.exercise) ?? 0) + (set.reps ?? 0) * (set.loadLb ?? 0))
+  }
+  return [...sums].map(([label, value]) => ({ label, value })).filter((bucket) => bucket.value > 0)
 }

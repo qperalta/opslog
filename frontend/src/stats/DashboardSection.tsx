@@ -1,9 +1,10 @@
-import { Alert, LinearProgress, ToggleButton, ToggleButtonGroup } from '@mui/material'
+import { Alert, Box, LinearProgress, ToggleButton, ToggleButtonGroup } from '@mui/material'
 import { useState } from 'react'
 import { todayLocal } from '../checkin/dates'
-import { PERIODS, periodRange, previousRange, totals } from './periods'
+import { Bars, ChartCard, EmptyChart } from './charts'
+import { PERIODS, liftedBuckets, liftedByExercise, periodRange, previousRange, totals } from './periods'
 import type { PeriodKey } from './periods'
-import { useFirstLogDate, useTrainingRows } from './queries'
+import { useDaySets, useFirstLogDate, useTrainingRows } from './queries'
 import { ReportsSection } from './ReportsSection'
 import { StatTiles } from './StatTiles'
 
@@ -20,8 +21,13 @@ export function DashboardSection() {
 
   const range = periodRange(period, today, firstDate)
   const previous = previousRange(period, today)
+  const daySets = useDaySets(today, period === 'today')
+
   const versus = PERIODS.find((item) => item.key === period)?.versus ?? null
-  const error = first.error ?? training.error
+  const lifted = period === 'today'
+    ? liftedByExercise(daySets.data ?? [])
+    : liftedBuckets(period, range, training.rows)
+  const error = first.error ?? training.error ?? daySets.error
 
   return (
     <>
@@ -36,8 +42,18 @@ export function DashboardSection() {
       {training.pending && !error && <LinearProgress sx={{ mb: 2 }} />}
 
       {!training.pending && (
-        <StatTiles current={totals(training.rows, range)} previous={previous && totals(training.rows, previous)}
-                   versus={versus} />
+        <>
+          <StatTiles current={totals(training.rows, range)} previous={previous && totals(training.rows, previous)}
+                     versus={versus} />
+
+          <Box sx={{ mb: 2 }}>
+            <ChartCard title="Weight lifted" subtitle={period === 'today' ? 'By exercise, in pounds' : 'In pounds'}>
+              {lifted.some((bucket) => bucket.value > 0)
+                ? <Bars data={lifted} unit="lb" horizontal={period === 'today'} />
+                : <EmptyChart text={period === 'today' ? 'Nothing lifted yet today' : 'Nothing lifted in this period'} />}
+            </ChartCard>
+          </Box>
+        </>
       )}
 
       <ReportsSection />
