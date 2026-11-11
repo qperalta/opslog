@@ -7,7 +7,7 @@ import { z } from 'zod'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { useNotify } from '../components/NotifyContext'
 import { useDeleteSet, useSaveSet } from './queries'
-import { isCardio, isStrength, measureLabel } from './setFormat'
+import { fixedTarget, isCardio, isStrength, measureLabel, targetText } from './setFormat'
 import type { LoggedSet, SessionExercise } from './types'
 
 const whole = /^\d+$/
@@ -27,10 +27,6 @@ function schemaFor(kind: string) {
   })
 }
 
-/* "8-12 reps" -> "8-12", "75 s" -> "75"; only a single number can stand in for an empty field */
-const targetText = (item: SessionExercise) => item.target.split(' ')[0]
-const fixedTarget = (item: SessionExercise) => whole.test(targetText(item)) ? targetText(item) : ''
-
 // the last logged load, then the target load
 const startLoad = (item: SessionExercise) => item.logged.at(-1)?.loadLb ?? item.targetLoadLb
 
@@ -47,16 +43,20 @@ interface Props {
   number: number
   set?: LoggedSet
   active: boolean
+  // seconds from the hold timer; the row is remounted with a new key to take it
+  initialMeasure?: string
+  // only on rows added with + Set
+  onRemove?: () => void
   onLogged: () => void
 }
 
 /* a logged set, the next set to log, or a set that waits its turn */
-export function SetRow({ date, item, number, set, active, onLogged }: Props) {
+export function SetRow({ date, item, number, set, active, initialMeasure = '', onRemove, onLogged }: Props) {
   const save = useSaveSet()
   const remove = useDeleteSet()
   const notify = useNotify()
   const [load, setLoad] = useState('')
-  const [measure, setMeasure] = useState('')
+  const [measure, setMeasure] = useState(initialMeasure)
   const [error, setError] = useState<string | null>(null)
   const [confirming, setConfirming] = useState(false)
   const target = { date, position: item.position }
@@ -144,7 +144,13 @@ export function SetRow({ date, item, number, set, active, onLogged }: Props) {
     })
   }
 
+  // an empty added row goes away instead
+  const removable = !!onRemove && load === '' && measure === ''
   const onClear = () => {
+    if (removable) {
+      onRemove?.()
+      return
+    }
     setLoad('')
     setMeasure('')
     setError(null)
@@ -160,7 +166,8 @@ export function SetRow({ date, item, number, set, active, onLogged }: Props) {
         <TextField size="small" sx={cell} value={measure} disabled={!active} onChange={(event) => setMeasure(event.target.value)}
                    placeholder={targetText(item)}
                    error={!!error} slotProps={{ htmlInput: { inputMode: 'numeric', 'aria-label': `Set ${number} ${measureLabel(item.kind).toLowerCase()}` } }} />
-        <IconButton aria-label={`Clear set ${number}`} onClick={onClear} disabled={!active}>
+        <IconButton aria-label={removable ? `Remove set ${number}` : `Clear set ${number}`} onClick={onClear}
+                    disabled={!active && !removable}>
           <CloseIcon />
         </IconButton>
         <IconButton aria-label={`Log set ${number}`} color="primary" onClick={onLog} disabled={!active || save.isPending}>

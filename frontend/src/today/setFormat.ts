@@ -17,3 +17,7 @@ export function describeSet(set: LoggedSet, kind: string) {
 export const restSeconds = (item: SessionExercise) => item.mainLift ? 180 : isStrength(item.kind) ? 90 : 60
 
 export const clock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
+
+/* "8-12 reps" -> "8-12", "75 s" -> "75"; only a single number can stand in for an empty field */
+export const targetText = (item: SessionExercise) => item.target.split(' ')[0]
+export const fixedTarget = (item: SessionExercise) => /^\d+$/.test(targetText(item)) ? targetText(item) : ''

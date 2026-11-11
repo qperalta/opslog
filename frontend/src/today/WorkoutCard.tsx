@@ -1,6 +1,9 @@
+import AddIcon from '@mui/icons-material/Add'
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz'
-import { Box, Card, CardContent, Chip, Stack, Typography } from '@mui/material'
-import { clock, isStrength, measureLabel, restSeconds } from './setFormat'
+import { Box, Button, Card, CardContent, Chip, Stack, Typography } from '@mui/material'
+import { useState } from 'react'
+import { HoldTimer } from './HoldTimer'
+import { clock, fixedTarget, isStrength, measureLabel, restSeconds } from './setFormat'
 import { SetRow } from './SetRow'
 import type { SessionExercise } from './types'
 
@@ -10,9 +13,17 @@ interface Props {
   onLogged: () => void
 }
 
-/* one row per planned set; only the first set not yet logged takes input */
+// same cap as LoggedSet.MAX_SETS
+const MAX_SETS = 10
+
+/* one row per planned set plus any added with + Set; only the first set not yet logged takes input */
 export function WorkoutCard({ date, item, onLogged }: Props) {
-  const open = Math.max(item.sets - item.logged.length, 0)
+  const [added, setAdded] = useState(0)
+  // seconds from the hold timer, and a count that remounts the active row so it takes them
+  const [held, setHeld] = useState({ seconds: '', count: 0 })
+  const rows = Math.min(Math.max(item.sets + added, item.logged.length), MAX_SETS)
+  const open = rows - item.logged.length
+  const holdSeconds = item.kind === 'TIMED' ? Number(fixedTarget(item)) : 0
 
   return (
     <Card variant="outlined">
@@ -45,10 +56,29 @@ export function WorkoutCard({ date, item, onLogged }: Props) {
             <SetRow key={`set-${set.setNumber}`} date={date} item={item} number={i + 1} set={set} active={false}
                     onLogged={onLogged} />
           ))}
-          {Array.from({ length: open }, (_, i) => (
-            <SetRow key={`open-${i}`} date={date} item={item} number={item.logged.length + i + 1} active={i === 0}
-                    onLogged={onLogged} />
-          ))}
+          {Array.from({ length: open }, (_, i) => {
+            const number = item.logged.length + i + 1
+            return (
+              <SetRow key={i === 0 ? `open-0-${held.count}` : `open-${i}`} date={date} item={item} number={number}
+                      active={i === 0} initialMeasure={i === 0 ? held.seconds : ''}
+                      onRemove={number > item.sets ? () => setAdded(Math.max(added - 1, 0)) : undefined}
+                      onLogged={() => {
+                        setHeld({ seconds: '', count: held.count + 1 })
+                        onLogged()
+                      }} />
+            )
+          })}
+        </Stack>
+
+        <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
+          {holdSeconds > 0 && open > 0 && (
+            <HoldTimer seconds={holdSeconds}
+                       onDone={(seconds) => setHeld({ seconds: String(seconds), count: held.count + 1 })} />
+          )}
+          <Button size="small" variant="outlined" startIcon={<AddIcon />} disabled={rows >= MAX_SETS}
+                  onClick={() => setAdded(added + 1)}>
+            Set
+          </Button>
         </Stack>
       </CardContent>
     </Card>
