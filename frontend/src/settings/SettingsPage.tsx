@@ -3,6 +3,7 @@ import { Box, Button, Card, CardContent, Stack, Typography } from '@mui/material
 import { useAuth } from '../auth/AuthContext'
 import { PageHeader } from '../components/PageHeader'
 import { LocationsSection } from '../locations/LocationsSection'
+import { AppearanceSection } from './AppearanceSection'
 
 /* account basics and the things set up once and rarely changed */
 export function SettingsPage() {
@@ -13,7 +14,7 @@ export function SettingsPage() {
       <PageHeader
         eyebrow="Setup"
         title="Settings"
-        subtitle="Your account and training locations"
+        subtitle="Your account, appearance and training locations"
       />
 
       <Typography variant="h6" component="h2" sx={{ mb: 1 }}>Account</Typography>
@@ -30,6 +31,8 @@ export function SettingsPage() {
           </Stack>
         </CardContent>
       </Card>
+
+      <AppearanceSection />
 
       <LocationsSection />
     </>

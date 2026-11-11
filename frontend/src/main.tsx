@@ -7,10 +7,21 @@ import { AuthProvider } from './auth/AuthProvider'
 import { NotifyProvider } from './components/NotifyProvider'
 
 const theme = createTheme({
-  palette: {
-    primary: { main: '#0f5e6e' },
-    secondary: { main: '#e07a3f' },
-    background: { default: '#f4f6f7' },
+  colorSchemes: {
+    light: {
+      palette: {
+        primary: { main: '#0f5e6e' },
+        secondary: { main: '#e07a3f' },
+        background: { default: '#f4f6f7' }
+      }
+    },
+    dark: {
+      palette: {
+        primary: { main: '#5fb3c2' },
+        secondary: { main: '#f0955f' },
+        background: { default: '#0e1416', paper: '#162024' }
+      }
+    }
   },
   shape: { borderRadius: 10 },
   components: {

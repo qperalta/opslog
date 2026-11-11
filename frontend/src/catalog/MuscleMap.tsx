@@ -36,6 +36,7 @@ interface Props {
 export function MuscleMap({ muscle, width = 110, labels = false }: Props) {
   const theme = useTheme()
   const targets = TARGETS[muscle] ?? []
+  const dark = theme.palette.mode === 'dark'
 
   return (
     <svg
@@ -46,7 +47,14 @@ export function MuscleMap({ muscle, width = 110, labels = false }: Props) {
       style={{ flexShrink: 0, display: 'block' }}
     >
       {VIEWS.map((offset) => (
-        <path key={offset} d={BODY} transform={`translate(${offset},0)`} fill="#F0F3F3" stroke="#9CAEB1" strokeWidth={1.5} />
+        <path
+          key={offset}
+          d={BODY}
+          transform={`translate(${offset},0)`}
+          fill={dark ? '#1f2b2f' : '#F0F3F3'}
+          stroke={dark ? '#4f6166' : '#9CAEB1'}
+          strokeWidth={1.5}
+        />
       ))}
       {regions.map((region) => (
         <path
@@ -54,8 +62,8 @@ export function MuscleMap({ muscle, width = 110, labels = false }: Props) {
           d={region.d}
           // a mirrored region reuses the other side's path, flipped around the body's center line
           transform={`translate(${region.offset},0)${region.mirror ? ' translate(200,0) scale(-1,1)' : ''}`}
-          fill={targets.includes(region.muscle) ? theme.palette.secondary.main : '#C6D4D6'}
-          stroke="white"
+          fill={targets.includes(region.muscle) ? theme.palette.secondary.main : dark ? '#3b4b50' : '#C6D4D6'}
+          stroke={theme.palette.background.paper}
           strokeWidth={1.7}
           strokeLinejoin="round"
         />
