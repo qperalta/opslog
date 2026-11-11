@@ -72,7 +72,7 @@ export function WorkoutCard({ date, item, onLogged }: Props) {
 
         <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
           {holdSeconds > 0 && open > 0 && (
-            <HoldTimer seconds={holdSeconds}
+            <HoldTimer date={date} storageKey={`opslog.hold.${item.position}`} seconds={holdSeconds}
                        onDone={(seconds) => setHeld({ seconds: String(seconds), count: held.count + 1 })} />
           )}
           <Button size="small" variant="outlined" startIcon={<AddIcon />} disabled={rows >= MAX_SETS}

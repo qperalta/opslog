@@ -5,7 +5,6 @@ import {
   Accordion, AccordionDetails, AccordionSummary, Alert, AlertTitle, Box, Button, Card, CardContent, Chip, LinearProgress,
   Stack, Typography,
 } from '@mui/material'
-import { useState } from 'react'
 import { Link as RouterLink } from 'react-router'
 import { ApiError } from '../api/client'
 import { CheckInForm } from '../checkin/CheckInForm'
@@ -21,6 +20,8 @@ import { useRebuildSession, useSession } from './queries'
 import { RestTimer } from './RestTimer'
 import { clock, describeSet, isStrength, restSeconds } from './setFormat'
 import type { Session, SessionExercise } from './types'
+import { useStoredTimer } from './useStoredTimer'
+import { useWakeLock } from './useWakeLock'
 import { useWorkoutMode } from './useWorkoutMode'
 import { WorkoutCard } from './WorkoutCard'
 
@@ -156,8 +157,9 @@ interface ReadyProps {
 }
 
 function ReadySession({ date, session, outOfDate, rebuilding, onRebuild }: ReadyProps) {
-  const [restEndsAt, setRestEndsAt] = useState<number | null>(null)
+  const [restEndsAt, setRestEndsAt] = useStoredTimer('opslog.rest', date)
   const workout = useWorkoutMode(date)
+  useWakeLock(workout.active)
   const notify = useNotify()
 
   // rebuilding would delete the log, so the server refuses it

@@ -3,15 +3,18 @@ import TimerIcon from '@mui/icons-material/Timer'
 import { Button } from '@mui/material'
 import { useEffect, useState } from 'react'
 import { clock } from './setFormat'
+import { useStoredTimer } from './useStoredTimer'
 
 interface Props {
+  date: string
+  storageKey: string
   seconds: number
   onDone: (seconds: number) => void
 }
 
-/* counts down a hold from an end time; stopping early reports the seconds held */
-export function HoldTimer({ seconds, onDone }: Props) {
-  const [endsAt, setEndsAt] = useState<number | null>(null)
+/* counts down a hold from a stored end time; stopping early reports the seconds held */
+export function HoldTimer({ date, storageKey, seconds, onDone }: Props) {
+  const [endsAt, setEndsAt] = useStoredTimer(storageKey, date)
   const [now, setNow] = useState(() => Date.now())
 
   useEffect(() => {
@@ -28,7 +31,7 @@ export function HoldTimer({ seconds, onDone }: Props) {
       }
     }, 250)
     return () => window.clearInterval(id)
-  }, [endsAt, seconds, onDone])
+  }, [endsAt, seconds, onDone, setEndsAt])
 
   if (endsAt == null) {
     return (
