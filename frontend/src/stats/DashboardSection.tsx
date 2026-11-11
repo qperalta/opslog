@@ -1,12 +1,12 @@
 import { Alert, Grid, LinearProgress, ToggleButton, ToggleButtonGroup } from '@mui/material'
 import { useState } from 'react'
 import { todayLocal } from '../checkin/dates'
-import { Bars, ChartCard, EmptyChart } from './charts'
+import { Bars, ChartCard, EmptyChart, SplitDonut } from './charts'
 import {
   PERIODS, liftedBuckets, liftedByExercise, periodRange, previousRange, totals, weekStreak, workoutsPerWeek,
 } from './periods'
 import type { PeriodKey } from './periods'
-import { useDaySets, useFirstLogDate, useTrainingRows } from './queries'
+import { useDaySets, useDirectionSplit, useFirstLogDate, useTrainingRows } from './queries'
 import { ReportsSection } from './ReportsSection'
 import { StatTiles } from './StatTiles'
 
@@ -23,6 +23,7 @@ export function DashboardSection() {
 
   const range = periodRange(period, today, firstDate)
   const previous = previousRange(period, today)
+  const split = useDirectionSplit(first.isSuccess ? range : null)
   const daySets = useDaySets(today, period === 'today')
 
   const versus = PERIODS.find((item) => item.key === period)?.versus ?? null
@@ -31,7 +32,7 @@ export function DashboardSection() {
     : liftedBuckets(period, range, training.rows)
   const weeks = workoutsPerWeek(training.rows, today)
   const streak = weekStreak(training.rows, today)
-  const error = first.error ?? training.error ?? daySets.error
+  const error = first.error ?? training.error ?? split.error ?? daySets.error
 
   return (
     <>
@@ -61,6 +62,13 @@ export function DashboardSection() {
             <Grid size={6}>
               <ChartCard title="Workouts per week" subtitle={`${streak}-week streak`}>
                 <Bars data={weeks} unit="workouts" height={140} />
+              </ChartCard>
+            </Grid>
+            <Grid size={6}>
+              <ChartCard title="Push vs. pull" subtitle="Sets in this period">
+                {split.pending && <LinearProgress />}
+                {!split.pending && split.total > 0 && <SplitDonut slices={split.slices} total={split.total} />}
+                {!split.pending && split.total === 0 && <EmptyChart text="No sets yet" />}
               </ChartCard>
             </Grid>
           </Grid>

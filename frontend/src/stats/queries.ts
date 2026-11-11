@@ -47,6 +47,32 @@ export const useTrainingRows = (range: ReportRange | null) =>
     }),
   })
 
+/* sets per direction summed across the requests; sets with no direction are the rest */
+export const useDirectionSplit = (range: ReportRange | null) =>
+  useQueries({
+    queries: (range ? chunks(range) : []).map((part) => ({
+      queryKey: ['reports', 'balance', part],
+      queryFn: () => api<BalanceReport>(`/api/reports/balance${toQuery(part)}`),
+    })),
+    combine: (results) => {
+      const sets = new Map<string, number>()
+      let total = 0
+      for (const result of results) {
+        if (!result.data) continue
+        total += result.data.totalSets
+        for (const row of result.data.directions) sets.set(row.direction, (sets.get(row.direction) ?? 0) + row.sets)
+      }
+      const directions = [...sets].map(([name, value]) => ({ name, value }))
+      const other = total - directions.reduce((sum, slice) => sum + slice.value, 0)
+      return {
+        slices: other > 0 ? [...directions, { name: 'Other', value: other }] : directions,
+        total,
+        pending: !range || results.some((result) => result.isPending),
+        error: results.find((result) => result.error)?.error ?? null,
+      }
+    },
+  })
+
 export const useDaySets = (date: string, enabled: boolean) =>
   useQuery({
     queryKey: ['history', { from: date, to: date, page: 0, size: 100 }],

@@ -1,8 +1,14 @@
-import { Box, Card, CardContent, Typography, useTheme } from '@mui/material'
+import { Box, Card, CardContent, Stack, Typography, useTheme } from '@mui/material'
 import type { ReactNode } from 'react'
-import { Bar, BarChart, CartesianGrid, Tooltip, XAxis, YAxis } from 'recharts'
+import { Bar, BarChart, CartesianGrid, Pie, PieChart, Tooltip, XAxis, YAxis } from 'recharts'
 import { compact } from './periods'
 import type { Bucket } from './periods'
+
+// push, pull, then the sets with neither; checked with the dataviz palette validator against the paper color
+const SPLIT_COLORS = {
+  light: ['#2a78d6', '#eb6834', '#8a9194'],
+  dark: ['#3987e5', '#d95926', '#6b7477'],
+}
 
 export function ChartCard({ title, subtitle, children }: { title: string; subtitle?: ReactNode; children: ReactNode }) {
   return (
@@ -40,6 +46,8 @@ function useChartTheme() {
       labelStyle: { color: palette.text.primary, fontWeight: 600 },
       itemStyle: { color: palette.text.primary },
     },
+    split: SPLIT_COLORS[palette.mode],
+    surface: palette.background.paper,
   }
 }
 
@@ -81,5 +89,37 @@ export function Bars({ data, unit, horizontal = false, height = 180 }: BarsProps
       {tooltip}
       <Bar dataKey="value" fill={chart.bar} radius={[4, 4, 0, 0]} maxBarSize={24} />
     </BarChart>
+  )
+}
+
+/* the legend under the ring names each slice with its sets and share */
+export function SplitDonut({ slices, total }: { slices: { name: string; value: number }[]; total: number }) {
+  const chart = useChartTheme()
+  const data = slices.map((slice, i) => ({ ...slice, fill: chart.split[Math.min(i, chart.split.length - 1)] }))
+
+  return (
+    <>
+      <Box sx={{ position: 'relative' }}>
+        <PieChart responsive style={{ width: '100%', height: 140 }}>
+          <Pie data={data} dataKey="value" nameKey="name" innerRadius="62%" outerRadius="95%"
+               stroke={chart.surface} strokeWidth={2} isAnimationActive={false} />
+          <Tooltip {...chart.tooltip} formatter={(value, name) => [`${Number(value).toLocaleString()} sets`, name]} />
+        </PieChart>
+        <Box sx={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', pointerEvents: 'none' }}>
+          <Typography sx={{ fontWeight: 700 }}>{compact(total)}</Typography>
+        </Box>
+      </Box>
+      <Stack spacing={0.5} sx={{ mt: 1 }}>
+        {data.map((slice) => (
+          <Stack key={slice.name} direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+            <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: slice.fill, flexShrink: 0 }} />
+            <Typography variant="caption" sx={{ flexGrow: 1 }}>{slice.name}</Typography>
+            <Typography variant="caption" color="text.secondary">
+              {slice.value} · {Math.round((slice.value / total) * 100)}%
+            </Typography>
+          </Stack>
+        ))}
+      </Stack>
+    </>
   )
 }
