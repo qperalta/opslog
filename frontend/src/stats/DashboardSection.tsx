@@ -1,8 +1,10 @@
-import { Alert, Box, LinearProgress, ToggleButton, ToggleButtonGroup } from '@mui/material'
+import { Alert, Grid, LinearProgress, ToggleButton, ToggleButtonGroup } from '@mui/material'
 import { useState } from 'react'
 import { todayLocal } from '../checkin/dates'
 import { Bars, ChartCard, EmptyChart } from './charts'
-import { PERIODS, liftedBuckets, liftedByExercise, periodRange, previousRange, totals } from './periods'
+import {
+  PERIODS, liftedBuckets, liftedByExercise, periodRange, previousRange, totals, weekStreak, workoutsPerWeek,
+} from './periods'
 import type { PeriodKey } from './periods'
 import { useDaySets, useFirstLogDate, useTrainingRows } from './queries'
 import { ReportsSection } from './ReportsSection'
@@ -27,6 +29,8 @@ export function DashboardSection() {
   const lifted = period === 'today'
     ? liftedByExercise(daySets.data ?? [])
     : liftedBuckets(period, range, training.rows)
+  const weeks = workoutsPerWeek(training.rows, today)
+  const streak = weekStreak(training.rows, today)
   const error = first.error ?? training.error ?? daySets.error
 
   return (
@@ -46,13 +50,20 @@ export function DashboardSection() {
           <StatTiles current={totals(training.rows, range)} previous={previous && totals(training.rows, previous)}
                      versus={versus} />
 
-          <Box sx={{ mb: 2 }}>
-            <ChartCard title="Weight lifted" subtitle={period === 'today' ? 'By exercise, in pounds' : 'In pounds'}>
-              {lifted.some((bucket) => bucket.value > 0)
-                ? <Bars data={lifted} unit="lb" horizontal={period === 'today'} />
-                : <EmptyChart text={period === 'today' ? 'Nothing lifted yet today' : 'Nothing lifted in this period'} />}
-            </ChartCard>
-          </Box>
+          <Grid container spacing={2} sx={{ mb: 2 }}>
+            <Grid size={12}>
+              <ChartCard title="Weight lifted" subtitle={period === 'today' ? 'By exercise, in pounds' : 'In pounds'}>
+                {lifted.some((bucket) => bucket.value > 0)
+                  ? <Bars data={lifted} unit="lb" horizontal={period === 'today'} />
+                  : <EmptyChart text={period === 'today' ? 'Nothing lifted yet today' : 'Nothing lifted in this period'} />}
+              </ChartCard>
+            </Grid>
+            <Grid size={6}>
+              <ChartCard title="Workouts per week" subtitle={`${streak}-week streak`}>
+                <Bars data={weeks} unit="workouts" height={140} />
+              </ChartCard>
+            </Grid>
+          </Grid>
         </>
       )}
 

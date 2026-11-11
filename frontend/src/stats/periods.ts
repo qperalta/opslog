@@ -143,3 +143,27 @@ export function liftedByExercise(sets: HistoryRow[]): Bucket[] {
   }
   return [...sums].map(([label, value]) => ({ label, value })).filter((bucket) => bucket.value > 0)
 }
+
+export function workoutsPerWeek(rows: TrainingReportRow[], today: string, weeks = 8): Bucket[] {
+  const thisMonday = mondayOf(today)
+  return Array.from({ length: weeks }, (_, i) => {
+    const from = addDays(thisMonday, -7 * (weeks - 1 - i))
+    return {
+      label: formatDay(from, { month: 'numeric', day: 'numeric' }),
+      value: totals(rows, { from, to: addDays(from, 6) }).workouts,
+    }
+  })
+}
+
+/* weeks in a row with a workout; the current week joins once it has one */
+export function weekStreak(rows: TrainingReportRow[], today: string) {
+  const trained = new Set(rows.filter((row) => row.setsLogged > 0).map((row) => mondayOf(row.date)))
+  let monday = mondayOf(today)
+  if (!trained.has(monday)) monday = addDays(monday, -7)
+  let streak = 0
+  while (trained.has(monday)) {
+    streak++
+    monday = addDays(monday, -7)
+  }
+  return streak
+}
