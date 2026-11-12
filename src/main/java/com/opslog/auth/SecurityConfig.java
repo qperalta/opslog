@@ -3,6 +3,7 @@ package com.opslog.auth;
 import com.opslog.common.SpaController;
 import com.opslog.mcp.McpTokenFilter;
 import com.opslog.mcp.McpTokenService;
+import jakarta.servlet.DispatcherType;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -34,7 +35,10 @@ public class SecurityConfig {
         return http
                 .securityMatcher("/mcp", "/mcp/**")
                 .csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
+                .authorizeHttpRequests(auth -> auth
+                        .dispatcherTypeMatchers(DispatcherType.ASYNC)
+                        .permitAll()
+                        .anyRequest().authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(new McpTokenFilter(tokens), AnonymousAuthenticationFilter.class)
                 .exceptionHandling(errors -> errors.authenticationEntryPoint(new
