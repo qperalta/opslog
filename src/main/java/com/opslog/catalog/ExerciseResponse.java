@@ -1,5 +1,7 @@
 package com.opslog.catalog;
 
+import org.hibernate.Hibernate;
+
 import java.util.Comparator;
 import java.util.List;
 
@@ -18,7 +20,9 @@ public record ExerciseResponse(
         List<LookupResponse> equipment
 ) {
 
-    static ExerciseResponse from(Exercise exercise) {
+    static ExerciseResponse from(Exercise entity) {
+        /* a lazy proxy fails instanceof, which would drop the rep range */
+        Exercise exercise = Hibernate.unproxy(entity, Exercise.class);
         Integer repMin = null, repMax = null, targetSeconds = null, durationMinutes = null;
         if(exercise instanceof StrengthExercise strength) {
             repMin = strength.getRepMin();

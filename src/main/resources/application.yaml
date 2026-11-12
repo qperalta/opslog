@@ -29,6 +29,12 @@ opslog:
   jwt:
     secret: dev-only-secret-change-me-0123456789abcdef
     ttl: 1h
+  # demo account for the videos and the evaluator; OPSLOG_DEMO_ENABLED=true and OPSLOG_DEMO_PASSWORD turn it on
+  demo:
+    enabled: false
+    reset: false
+    email: demo@kaimanastrength.example
+    display-name: Kai Demo
 
 management:
   health:
