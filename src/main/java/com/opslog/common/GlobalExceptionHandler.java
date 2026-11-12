@@ -15,6 +15,7 @@ import com.opslog.plan.LockedDayException;
 import com.opslog.plan.ProgramNotChosenException;
 import com.opslog.plan.ProgramTemplateNotFoundException;
 import com.opslog.session.SessionHasLogsException;
+import com.opslog.mcp.McpTokenNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -151,5 +152,10 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred. Reference: " + errorId);
         problem.setProperty("errorId", errorId);
         return problem;
+    }
+
+    @ExceptionHandler(McpTokenNotFoundException.class)
+    ProblemDetail handleMcpTokenNotFound(McpTokenNotFoundException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 }
