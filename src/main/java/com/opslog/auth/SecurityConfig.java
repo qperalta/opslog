@@ -1,8 +1,11 @@
 package com.opslog.auth;
 
 import com.opslog.common.SpaController;
+import com.opslog.mcp.McpTokenFilter;
+import com.opslog.mcp.McpTokenService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -14,7 +17,9 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
+import org.springframework.security.oauth2.server.resource.web.BearerTokenAuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -24,6 +29,20 @@ import java.nio.charset.StandardCharsets;
 public class SecurityConfig {
 
     @Bean
+    @Order(1)
+    SecurityFilterChain mcpFilterChain(HttpSecurity http, McpTokenService tokens) throws Exception {
+        return http
+                .securityMatcher("/mcp", "/mcp/**")
+                .csrf(csrf -> csrf.disable())
+                .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .addFilterBefore(new McpTokenFilter(tokens), AnonymousAuthenticationFilter.class)
+                .exceptionHandling(errors -> errors.authenticationEntryPoint(new
+                        BearerTokenAuthenticationEntryPoint()))
+                .build();
+    }
+
+    @Bean
     SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         return http
             .csrf(csrf -> csrf.disable())
@@ -31,8 +50,6 @@ public class SecurityConfig {
                     .requestMatchers("/", "/index.html","/assets/**", "/favicon.svg", "/icons.svg").permitAll()
                     .requestMatchers(HttpMethod.GET, SpaController.ROUTES).permitAll()
                     .requestMatchers("/actuator/health").permitAll()
-                    // TODO: replace with scoped MCP token auth.
-                    .requestMatchers("/mcp").permitAll()
                     .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
                     .requestMatchers("/error").permitAll()
                     .anyRequest().authenticated()

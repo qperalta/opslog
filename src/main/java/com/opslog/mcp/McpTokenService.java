@@ -4,9 +4,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Transactional
@@ -17,6 +19,7 @@ public class McpTokenService {
 
     private final McpTokenRepository tokens;
     private final SecureRandom random = new SecureRandom();
+    private static final Duration LAST_USED_STEP = Duration.ofMinutes(1);
 
     McpTokenService(McpTokenRepository tokens) { this.tokens = tokens; }
 
@@ -34,6 +37,19 @@ public class McpTokenService {
                 .stream()
                 .map(McpTokenResponse::from)
                 .toList();
+    }
+
+    public Optional<McpPrincipal> authenticate(String secret) {
+        if(secret == null || !secret.startsWith(PREFIX)) return Optional.empty();
+        return tokens.findByTokenHash(TokenHash.of(secret))
+                .filter(McpToken::isActive)
+                .map(token -> {
+                    Instant now = Instant.now();
+                    if(token.getLastUsedAt() == null || token.getLastUsedAt().isBefore(now.minus(LAST_USED_STEP))) {
+                        token.markUsed(now);
+                    }
+                    return new McpPrincipal(token.getUserId(), token.getId(), token.getScope());
+                });
     }
 
     public McpTokenResponse revoke(long userId, long id) {
