@@ -27,5 +27,7 @@ RUN useradd --system --uid 1001 opslog # runs as a user for security measure.
 COPY --from=backend /app/target/*.jar app.jar
 USER opslog
 ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=70 -XX:+UseSerialGC -XX:TieredStopAtLevel=1"
+# prod by default: a host that forgets the profile fails closed (no JWT_SECRET, no startup) instead of signing with the dev secret
+ENV SPRING_PROFILES_ACTIVE=prod
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]
