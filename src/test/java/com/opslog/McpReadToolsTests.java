@@ -142,4 +142,40 @@ class McpReadToolsTests {
         assertEquals(McpOutcome.FAILED, entry.getOutcome());
         assertEquals("Dates must be YYYY-MM-DD, got tomorrow", entry.getDetail());
     }
+
+    @Test
+    void searchExercisesFiltersByMuscleGroupName() throws Exception {
+        String page = JsonPath.read(call("search_exercises", """
+                {"muscleGroup":"quadriceps","kind":"STRENGTH"}"""), "$.result.content[0].text");
+
+        List<String> muscles = JsonPath.read(page, "$.items[*].primaryMuscle.name");
+        assertTrue(muscles.size() > 1);
+        assertTrue(muscles.stream().allMatch("Quadriceps"::equals));
+        assertEquals("search_exercises", audit.recent(owner.getId()).getFirst().getTool());
+    }
+
+    @Test
+    void searchExercisesWithAnUnknownNameListsTheValidOnes() throws Exception {
+        String result = call("search_exercises", """
+                {"muscleGroup":"Quads"}""");
+
+        assertTrue(JsonPath.<Boolean>read(result, "$.result.isError"));
+        String message = JsonPath.read(result, "$.result.content[0].text");
+        assertTrue(message.contains("Unknown muscle group Quads. Use one of:"));
+        assertTrue(message.contains("Quadriceps"));
+        assertEquals(McpOutcome.FAILED, audit.recent(owner.getId()).getFirst().getOutcome());
+    }
+
+    @Test
+    void getTrainingReportHasATitleAndTimestamp() throws Exception {
+        String report = JsonPath.read(call("get_training_report", """
+                {"from":"%s","to":"%s"}""".formatted(today.minusDays(6), today)), "$.result.content[0].text");
+
+        assertEquals("Training Report", JsonPath.read(report, "$.title"));
+        assertNotNull(JsonPath.read(report, "$.generatedAt"));
+        assertEquals(0, JsonPath.<Integer>read(report, "$.sessions"));
+        McpAuditEntry entry = audit.recent(owner.getId()).getFirst();
+        assertEquals("get_training_report", entry.getTool());
+        assertEquals(McpOutcome.OK, entry.getOutcome());
+    }
 }
