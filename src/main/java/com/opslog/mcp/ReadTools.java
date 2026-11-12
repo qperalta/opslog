@@ -20,11 +20,9 @@ import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDate;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeParseException;
 import java.util.List;
-import java.util.stream.Collectors;
+
+import static com.opslog.mcp.ToolArgs.*;
 
 @Component
 public class ReadTools {
@@ -117,27 +115,5 @@ public class ReadTools {
             @McpToolParam(description = "Last day as YYYY-MM-DD. Default today (UTC)", required = false) String to) {
         return caller.call("get_training_report", McpScope.READ, "from=" + from + " to=" + to, principal ->
                 reports.training(principal.userId(), new ReportSearch(dateOr(from, null), dateOr(to, null))));
-    }
-
-    /* the agent sends names, the search takes ids; options come from the database */
-    private static Long idOf(String label, String name, List<LookupResponse> options) {
-        if(name == null || name.isBlank()) return null;
-        return options.stream()
-                .filter(option -> option.name().equalsIgnoreCase(name.strip()))
-                .findFirst()
-                .map(LookupResponse::id)
-                .orElseThrow(() -> new IllegalArgumentException("Unknown " + label + " " + name.strip() + ". Use one of: "
-                        + options.stream().map(LookupResponse::name).collect(Collectors.joining(", "))));
-    }
-
-    private static LocalDate today() { return LocalDate.now(ZoneOffset.UTC); }
-
-    private static LocalDate dateOr(String text, LocalDate fallback) {
-        if(text == null || text.isBlank()) return fallback;
-        try {
-            return LocalDate.parse(text.trim());
-        } catch(DateTimeParseException ex) {
-            throw new IllegalArgumentException("Dates must be YYYY-MM-DD, got " + text);
-        }
     }
 }
