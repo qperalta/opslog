@@ -4,6 +4,7 @@ import { useAuth } from '../auth/AuthContext'
 import { PageHeader } from '../components/PageHeader'
 import { LocationsSection } from '../locations/LocationsSection'
 import { AppearanceSection } from './AppearanceSection'
+import { AiAccessSection } from '../mcp/AiAccessSection'
 
 /* account basics and the things set up once and rarely changed */
 export function SettingsPage() {
@@ -35,6 +36,8 @@ export function SettingsPage() {
       <AppearanceSection />
 
       <LocationsSection />
+
+      <AiAccessSection />
     </>
   )
 }
