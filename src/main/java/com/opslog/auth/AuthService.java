@@ -15,23 +15,32 @@ public class AuthService {
     private final UserAccountRepository users;
     private final PasswordEncoder passwordEncoder;
     private final TokenService tokenService;
+    private final LoginAttempts attempts;
     private final String dummyHash;
 
-    public AuthService(UserAccountRepository users, PasswordEncoder passwordEncoder, TokenService tokenService) {
+    public AuthService(UserAccountRepository users, PasswordEncoder passwordEncoder, TokenService tokenService,
+                       LoginAttempts attempts) {
         this.users = users;
         this.passwordEncoder = passwordEncoder;
         this.tokenService = tokenService;
+        this.attempts = attempts;
         this.dummyHash = passwordEncoder.encode("timing-equalizer-not-a-real-password");
     }
 
     @Transactional(readOnly = true)
     public LoginResponse login(LoginRequest request) {
         String email = UserAccount.normalizeEmail(request.email());
+        // checked before the password, so a locked email can't be guessed at
+        attempts.checkAllowed(email);
         Optional<UserAccount> user = users.findByEmail(email);
 
         String hash = user.map(UserAccount::getPasswordHash).orElse(dummyHash);
         boolean matches = passwordEncoder.matches(request.password(), hash);
-        if(user.isEmpty() || !matches) throw new InvalidCredentialsException();
+        if(user.isEmpty() || !matches) {
+            attempts.recordFailure(email);
+            throw new InvalidCredentialsException();
+        }
+        attempts.recordSuccess(email);
 
         Jwt jwt = tokenService.issue(user.get());
         return new LoginResponse(jwt.getTokenValue(), jwt.getExpiresAt(), UserResponse.from(user.get()));

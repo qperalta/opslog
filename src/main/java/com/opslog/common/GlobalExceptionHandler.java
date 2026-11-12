@@ -2,6 +2,7 @@ package com.opslog.common;
 
 import com.opslog.auth.EmailAlreadyRegisteredException;
 import com.opslog.auth.InvalidCredentialsException;
+import com.opslog.auth.TooManyLoginAttemptsException;
 import com.opslog.catalog.DuplicateExerciseNameException;
 import com.opslog.checkin.CheckInNotFoundException;
 import com.opslog.catalog.ExerciseNotFoundException;
@@ -60,6 +61,14 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(InvalidCredentialsException.class)
     ProblemDetail handleInvalidCredentials(InvalidCredentialsException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
+    }
+
+    /* 429 with Retry-After in seconds */
+    @ExceptionHandler(TooManyLoginAttemptsException.class)
+    ResponseEntity<ProblemDetail> handleTooManyLoginAttempts(TooManyLoginAttemptsException ex) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header(HttpHeaders.RETRY_AFTER, String.valueOf(ex.getRetryAfterSeconds()))
+                .body(ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage()));
     }
 
     @ExceptionHandler(EmailAlreadyRegisteredException.class)

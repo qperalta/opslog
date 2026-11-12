@@ -23,11 +23,12 @@ public class AuthServiceTest {
     @Mock UserAccountRepository users;
     @Mock TokenService tokenService;
     PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(4);
+    LoginAttempts attempts = new LoginAttempts(new LoginAttemptsTest.TestClock());
     AuthService authService;
 
     @BeforeEach
     void setup() {
-        authService = new AuthService(users, passwordEncoder, tokenService);
+        authService = new AuthService(users, passwordEncoder, tokenService, attempts);
     }
 
     @Test
@@ -95,5 +96,38 @@ public class AuthServiceTest {
         assertEquals("test-token", response.token());
         assertEquals(expiresAt, response.expiresAt());
         assertEquals("que@email.com", response.user().email());
+    }
+
+    @Test
+    void fiveWrongPasswordsLockTheEmailEvenForTheRightPassword() {
+        UserAccount user = new UserAccount("que@email.com", passwordEncoder.encode("password123"), "Q");
+        when(users.findByEmail("que@email.com")).thenReturn(Optional.of(user));
+        for(int i = 0; i < LoginAttempts.MAX_FAILURES; i++) {
+            assertThrows(InvalidCredentialsException.class,
+                    () -> authService.login(new LoginRequest("que@email.com", "wrong-password")));
+        }
+
+        // the lock is checked before the password, and the email is normalized first
+        assertThrows(TooManyLoginAttemptsException.class,
+                () -> authService.login(new LoginRequest(" QUE@email.com ", "password123")));
+        verify(tokenService, never()).issue(any());
+    }
+
+    @Test
+    void successfulLoginClearsEarlierFailures() {
+        UserAccount user = new UserAccount("que@email.com", passwordEncoder.encode("password123"), "Q");
+        when(users.findByEmail("que@email.com")).thenReturn(Optional.of(user));
+        when(tokenService.issue(user)).thenReturn(Jwt.withTokenValue("t").header("alg", "HS256").claim("sub", "1")
+                .issuedAt(Instant.now()).expiresAt(Instant.now().plusSeconds(3600)).build());
+        for(int i = 0; i < LoginAttempts.MAX_FAILURES - 1; i++) {
+            assertThrows(InvalidCredentialsException.class,
+                    () -> authService.login(new LoginRequest("que@email.com", "wrong-password")));
+        }
+
+        authService.login(new LoginRequest("que@email.com", "password123"));
+
+        assertThrows(InvalidCredentialsException.class,
+                () -> authService.login(new LoginRequest("que@email.com", "wrong-password")));
+        assertDoesNotThrow(() -> attempts.checkAllowed("que@email.com"));
     }
 }
