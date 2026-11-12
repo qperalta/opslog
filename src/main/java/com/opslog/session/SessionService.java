@@ -4,9 +4,12 @@ import com.opslog.catalog.Exercise;
 import com.opslog.checkin.CheckIn;
 import com.opslog.checkin.CheckInRepository;
 import com.opslog.checkin.TrainingTier;
+import com.opslog.common.Require;
 import com.opslog.location.Location;
 import com.opslog.logging.ProgressionService;
 import com.opslog.logging.SessionExerciseNotFoundException;
+import com.opslog.plan.Actor;
+import com.opslog.plan.LockedDayException;
 import com.opslog.plan.PlanDay;
 import com.opslog.plan.PlanDayRepository;
 import com.opslog.plan.PlanService;
@@ -52,18 +55,25 @@ public class SessionService {
     /* the stored session, or a new one the first time */
     public SessionResponse get(long userId, LocalDate date) {
         Optional<TrainingSession> stored = sessions.findByUserIdAndDate(userId, date);
-        return stored.map(SessionResponse::from).orElseGet(() -> build(userId, date));
+        return stored.map(SessionResponse::from).orElseGet(() -> build(userId, date, generator));
     }
 
     /* after the check-in or the plan changes; refused once sets are logged */
     public SessionResponse rebuild(long userId, LocalDate date) {
-        sessions.findByUserIdAndDate(userId, date).ifPresent(existing -> {
-            if(existing.hasLoggedSets()) throw new SessionHasLogsException(date);
-            sessions.delete(existing);
-            /* the unique (user, date) row must be gone before the insert */
-            sessions.flush();
-        });
-        return build(userId, date);
+        removeUnlogged(userId, date);
+        return build(userId, date, generator);
+    }
+
+    /* the agent's session (AiSessionWriter) for a checked-in training day; locked days are read-only to the agent */
+    public SessionResponse write(long userId, LocalDate date, SessionGenerator writer) {
+        PlanDay day = planDay(userId, date);
+        if(writer.source() == Actor.AGENT && day.isLocked()) throw new LockedDayException(date);
+        Require.that(day.isTraining(), date + " is a rest day in the plan");
+        removeUnlogged(userId, date);
+        SessionResponse written = build(userId, date, writer);
+        // rolls back the removal too
+        Require.that(written.status() == SessionStatus.READY, "Check in for " + date + " first: the check-in picks the tier");
+        return written;
     }
 
     /* skip or re-activate one exercise; only the user's own stored session */
@@ -76,7 +86,16 @@ public class SessionService {
         return SessionExerciseResponse.from(item);
     }
 
-    private SessionResponse build(long userId, LocalDate date) {
+    private void removeUnlogged(long userId, LocalDate date) {
+        sessions.findByUserIdAndDate(userId, date).ifPresent(existing -> {
+            if(existing.hasLoggedSets()) throw new SessionHasLogsException(date);
+            sessions.delete(existing);
+            /* the unique (user, date) row must be gone before the insert */
+            sessions.flush();
+        });
+    }
+
+    private SessionResponse build(long userId, LocalDate date, SessionGenerator generator) {
         /* loaded first so template exercises resolve to these instances, not lazy proxies */
         List<Exercise> candidates = catalog.findVisibleTo(userId).stream().map(SessionService::unproxy).toList();
 

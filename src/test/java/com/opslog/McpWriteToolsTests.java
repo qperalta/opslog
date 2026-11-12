@@ -3,6 +3,9 @@ package com.opslog;
 import com.jayway.jsonpath.JsonPath;
 import com.opslog.auth.UserAccount;
 import com.opslog.auth.UserAccountRepository;
+import com.opslog.checkin.CheckInRequest;
+import com.opslog.checkin.CheckInService;
+import com.opslog.location.LocationRepository;
 import com.opslog.mcp.McpAuditEntry;
 import com.opslog.mcp.McpAuditService;
 import com.opslog.mcp.McpOutcome;
@@ -18,6 +21,9 @@ import com.opslog.plan.PlanService;
 import com.opslog.plan.ProgramService;
 import com.opslog.plan.ProgramTemplateResponse;
 import com.opslog.plan.UserProgramRequest;
+import com.opslog.session.SessionExerciseResponse;
+import com.opslog.session.SessionResponse;
+import com.opslog.session.SessionService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,6 +38,7 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
@@ -51,7 +58,11 @@ class McpWriteToolsTests {
     @Autowired ProgramService programs;
     @Autowired PlanService plans;
     @Autowired PlanDayService planDays;
+    @Autowired CheckInService checkIns;
+    @Autowired LocationRepository locations;
+    @Autowired SessionService sessions;
 
+    private final LocalDate today = LocalDate.now(ZoneOffset.UTC);
     private final LocalDate tomorrow = LocalDate.now(ZoneOffset.UTC).plusDays(1);
 
     private UserAccount owner;
@@ -159,5 +170,78 @@ class McpWriteToolsTests {
         String message = JsonPath.read(result, "$.result.content[0].text");
         assertTrue(message.contains("Unknown workout Leg Day. Use one of:"));
         assertTrue(message.contains(template.workouts().getFirst().name()));
+    }
+
+    /* today as a checked-in training day; the rules engine's session gives exercise ids that fit the location */
+    private SessionResponse checkedInTrainingDay() {
+        long workout = template.workouts().getFirst().id();
+        planDays.setDay(owner.getId(), today, new PlanDayRequest(PlanMode.TRAINING, workout, null, false), Actor.USER);
+        long downtown = locations.findVisibleTo(owner.getId()).stream()
+                .filter(l -> l.getName().equals("Kaimana Downtown")).findFirst().orElseThrow().getId();
+        checkIns.save(owner.getId(), today, new CheckInRequest(5, 1, downtown));
+        return sessions.get(owner.getId(), today);
+    }
+
+    private static String twoExercises(SessionResponse rules) {
+        List<SessionExerciseResponse> items = rules.exercises();
+        return """
+                {"exercises":[{"exerciseId":%d,"sets":4,"reason":"aim for 8 reps"},{"exerciseId":%d,"sets":2}],
+                 "notes":["Slept well, so one extra set on the first lift"]}"""
+                .formatted(items.get(0).exerciseId(), items.get(1).exerciseId());
+    }
+
+    @Test
+    void agentWritesTheSessionForACheckedInDay() throws Exception {
+        SessionResponse rules = checkedInTrainingDay();
+
+        String result = call(token(McpScope.READ_WRITE), "write_session", twoExercises(rules));
+
+        assertFalse(JsonPath.<Boolean>read(result, "$.result.isError"));
+        SessionResponse written = sessions.get(owner.getId(), today);
+        assertEquals(Actor.AGENT, written.source());
+        assertEquals(2, written.exercises().size());
+        assertEquals(4, written.exercises().getFirst().sets());
+        assertEquals(List.of("Written by the AI assistant for the Full tier", "Slept well, so one extra set on the first lift"),
+                written.notes());
+        McpAuditEntry entry = audit.recent(owner.getId()).getFirst();
+        assertEquals("write_session", entry.getTool());
+        assertEquals(McpOutcome.OK, entry.getOutcome());
+    }
+
+    @Test
+    void agentCannotWriteTheSessionOfALockedDay() throws Exception {
+        SessionResponse rules = checkedInTrainingDay();
+        long workout = template.workouts().getFirst().id();
+        planDays.setDay(owner.getId(), today, new PlanDayRequest(PlanMode.TRAINING, workout, null, true), Actor.USER);
+
+        String result = call(token(McpScope.READ_WRITE), "write_session", twoExercises(rules));
+
+        assertTrue(JsonPath.<Boolean>read(result, "$.result.isError"));
+        assertEquals(Actor.RULES, sessions.get(owner.getId(), today).source());
+        assertEquals("The plan for " + today + " is locked", audit.recent(owner.getId()).getFirst().getDetail());
+    }
+
+    @Test
+    void writeSessionNeedsACheckIn() throws Exception {
+        long workout = template.workouts().getFirst().id();
+        planDays.setDay(owner.getId(), tomorrow, new PlanDayRequest(PlanMode.TRAINING, workout, null, false), Actor.USER);
+
+        String result = call(token(McpScope.READ_WRITE), "write_session", """
+                {"date":"%s","exercises":[{"exerciseId":1,"sets":3}]}""".formatted(tomorrow));
+
+        assertTrue(JsonPath.<Boolean>read(result, "$.result.isError"));
+        assertEquals("Check in for " + tomorrow + " first: the check-in picks the tier",
+                audit.recent(owner.getId()).getFirst().getDetail());
+    }
+
+    @Test
+    void readTokenCannotWriteASession() throws Exception {
+        SessionResponse rules = checkedInTrainingDay();
+
+        String result = call(token(McpScope.READ), "write_session", twoExercises(rules));
+
+        assertTrue(JsonPath.<Boolean>read(result, "$.result.isError"));
+        assertEquals(Actor.RULES, sessions.get(owner.getId(), today).source());
+        assertEquals(McpOutcome.DENIED, audit.recent(owner.getId()).getFirst().getOutcome());
     }
 }
