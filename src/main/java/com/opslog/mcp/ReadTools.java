@@ -17,6 +17,7 @@ import com.opslog.report.ReportSearch;
 import com.opslog.report.ReportService;
 import com.opslog.report.TrainingReport;
 import org.springframework.ai.mcp.annotation.McpTool;
+import org.springframework.ai.mcp.annotation.context.McpSyncRequestContext;
 import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.stereotype.Component;
 
@@ -46,22 +47,22 @@ public class ReadTools {
 
     @McpTool(name = "get_checkin", annotations = @McpTool.McpAnnotations(readOnlyHint = true, destructiveHint = false, openWorldHint = false),
             description = "The morning check-in for one day: sleep quality and soreness (1 to 5), the location, and the training tier it picked")
-    public CheckInResponse getCheckin(@McpToolParam(description = "Day as YYYY-MM-DD. Leave out for today (UTC)",
+    public CheckInResponse getCheckin(McpSyncRequestContext context, @McpToolParam(description = "Day as YYYY-MM-DD. Leave out for today (UTC)",
     required = false) String date) {
-        return caller.call("get_checkin", McpScope.READ, "date=" + date, principal ->
+        return caller.call(context, "get_checkin", McpScope.READ, "date=" + date, principal ->
                 checkIns.get(principal.userId(), dateOr(date, today())));
     }
 
     @McpTool(name="list_logs", annotations = @McpTool.McpAnnotations(readOnlyHint = true, destructiveHint = false, openWorldHint = false),
             description = "Logged sets, newest day first: date, workout, exercise, set number, reps or seconds, load in lb, and whether the set was clean")
-    public PageResponse<HistoryRow> listLogs(
+    public PageResponse<HistoryRow> listLogs(McpSyncRequestContext context,
             @McpToolParam(description = "First day as YYYY-MM-DD", required = false) String from,
             @McpToolParam(description = "Last day as YYYY-MM-DD", required = false) String to,
             @McpToolParam(description = "Only this exercise; ids come from search_exercises", required = false) Long exerciseId,
             @McpToolParam(description = "Page number from 0", required = false) Integer page,
             @McpToolParam(description = "Rows per page, 1 to 100. Default 20", required = false) Integer size) {
         String detail = "from=" + from + " to=" + to + " exerciseId=" + exerciseId + " page=" + page;
-        return caller.call("list_logs", McpScope.READ, detail, principal -> {
+        return caller.call(context, "list_logs", McpScope.READ, detail, principal -> {
             // same limits as HistorySearch
             Require.that(page == null || page >= 0, "Page must be 0 or more");
             Require.that(size == null || (size >= 1 && size <= 100), "Page size must be 1 to 100");
@@ -72,16 +73,16 @@ public class ReadTools {
 
     @McpTool(name="get_plan", annotations = @McpTool.McpAnnotations(readOnlyHint = true, destructiveHint = false, openWorldHint = false),
             description = "The plan for one week, Monday to Sunday: each day's mode, workout, location, and whether the member locked it")
-    public WeekResponse getPlan(@McpToolParam(description = "Any day in the week as YYYY-MM-DD. Leave out for this week",
+    public WeekResponse getPlan(McpSyncRequestContext context, @McpToolParam(description = "Any day in the week as YYYY-MM-DD. Leave out for this week",
             required = false) String week) {
-        return caller.call("get_plan", McpScope.READ, "week=" + week, principal ->
+        return caller.call(context, "get_plan", McpScope.READ, "week=" + week, principal ->
                 plans.week(principal.userId(), dateOr(week, today())));
     }
 
     @McpTool(name="search_exercises", annotations = @McpTool.McpAnnotations(readOnlyHint = true, destructiveHint = false, openWorldHint = false),
             description = "Exercises from the catalog and the member's own, sorted by name: id, kind, movement pattern, primary muscle, " +
                     "target reps or time, and equipment. Filters are optional and combine; an unknown name lists the valid ones")
-    public PageResponse<ExerciseResponse> searchExercises(
+    public PageResponse<ExerciseResponse> searchExercises(McpSyncRequestContext context,
             @McpToolParam(description = "Part of the exercise name", required = false) String query,
             @McpToolParam(description = "Primary muscle group by name, e.g. Quadriceps", required = false) String muscleGroup,
             @McpToolParam(description = "Movement pattern by name, e.g. Horizontal Pull", required = false) String movementPattern,
@@ -91,7 +92,7 @@ public class ReadTools {
             @McpToolParam(description = "Rows per page, 1 to 100. Default 20", required = false) Integer size) {
         String detail = "query=" + query + " muscleGroup=" + muscleGroup + " movementPattern=" + movementPattern
                 + " equipment=" + equipment + " kind=" + kind + " page=" + page;
-        return caller.call("search_exercises", McpScope.READ, detail, principal -> {
+        return caller.call(context, "search_exercises", McpScope.READ, detail, principal -> {
             // same limits as ExerciseSearch
             Require.that(query == null || query.strip().length() <= 80, "Search text must be 80 characters or fewer");
             Require.that(page == null || page >= 0, "Page must be 0 or more");
@@ -110,10 +111,10 @@ public class ReadTools {
     @McpTool(name="get_training_report", annotations = @McpTool.McpAnnotations(readOnlyHint = true, destructiveHint = false, openWorldHint = false),
             description = "The Training Report for a date range, one row per session: date, workout, tier, location, exercises done of planned, " +
                     "sets logged, percent of clean sets, and volume in lb, plus totals. Leave out both dates for the last 28 days")
-    public TrainingReport getTrainingReport(
+    public TrainingReport getTrainingReport(McpSyncRequestContext context,
             @McpToolParam(description = "First day as YYYY-MM-DD", required = false) String from,
             @McpToolParam(description = "Last day as YYYY-MM-DD. Default today (UTC)", required = false) String to) {
-        return caller.call("get_training_report", McpScope.READ, "from=" + from + " to=" + to, principal ->
+        return caller.call(context, "get_training_report", McpScope.READ, "from=" + from + " to=" + to, principal ->
                 reports.training(principal.userId(), new ReportSearch(dateOr(from, null), dateOr(to, null))));
     }
 }

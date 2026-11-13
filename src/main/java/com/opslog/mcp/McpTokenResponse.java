@@ -9,11 +9,12 @@ public record McpTokenResponse(
         boolean active,
         Instant createdAt,
         Instant lastUsedAt,
+        String clientName,
         Instant revokedAt
 ) {
 
     static McpTokenResponse from(McpToken token) {
         return new McpTokenResponse(token.getId(), token.getName(), token.getScope(), token.isActive(),
-                token.getCreatedAt(), token.getLastUsedAt(), token.getRevokedAt());
+                token.getCreatedAt(), token.getLastUsedAt(), token.getClientName(), token.getRevokedAt());
     }
 }

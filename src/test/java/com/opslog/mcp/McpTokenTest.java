@@ -55,4 +55,25 @@ class McpTokenTest {
         assertEquals(first, token.getRevokedAt());
         assertThrows(IllegalArgumentException.class, () -> token.markUsed(Instant.now()));
     }
+
+    @Test
+    void recordClientTrimsAndIgnoresBlank() {
+        McpToken token = new McpToken(1L, "Claude", HASH, McpScope.READ);
+
+        token.recordClient("  Claude  ");
+        assertEquals("Claude", token.getClientName());
+
+        token.recordClient("   ");
+        token.recordClient(null);
+        assertEquals("Claude", token.getClientName());
+    }
+
+    @Test
+    void recordClientCutsLongNamesToTheColumn() {
+        McpToken token = new McpToken(1L, "Claude", HASH, McpScope.READ);
+
+        token.recordClient("x".repeat(80));
+
+        assertEquals(60, token.getClientName().length());
+    }
 }

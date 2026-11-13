@@ -14,6 +14,7 @@ import com.opslog.session.ProposedExercise;
 import com.opslog.session.SessionResponse;
 import com.opslog.session.SessionService;
 import org.springframework.ai.mcp.annotation.McpTool;
+import org.springframework.ai.mcp.annotation.context.McpSyncRequestContext;
 import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.stereotype.Component;
 
@@ -45,7 +46,7 @@ public class WriteTools {
     @McpTool(name="set_plan_day", annotations = @McpTool.McpAnnotations(readOnlyHint = false, destructiveHint = false, idempotentHint = true, openWorldHint = false),
             description = "Set one day of the member's plan: TRAINING with a workout from their program, REST, or AUTO to let the rules engine pick. " +
                     "Days the member locked cannot be changed, and the agent cannot lock or unlock a day. Needs a read and write token")
-    public PlanDayResponse setPlanDay(
+    public PlanDayResponse setPlanDay(McpSyncRequestContext context,
             @McpToolParam(description = "Day as YYYY-MM-DD") String date,
             @McpToolParam(description = "AUTO, TRAINING or REST") String mode,
             @McpToolParam(description = "Workout name from the member's program, only for TRAINING. Leave out to let the rules engine pick",
@@ -53,7 +54,7 @@ public class WriteTools {
             @McpToolParam(description = "Location name, e.g. Kaimana Downtown. Leave out for the program's location",
                     required = false) String location) {
         String detail = "date=" + date + " mode=" + mode + " workout=" + workout + " location=" + location;
-        return caller.call("set_plan_day", McpScope.READ_WRITE, detail, principal -> {
+        return caller.call(context, "set_plan_day", McpScope.READ_WRITE, detail, principal -> {
             Require.that(date != null && !date.isBlank(), "Date is required");
             PlanMode planMode = modeOf(mode);
             Require.that(planMode == PlanMode.TRAINING || workout == null || workout.isBlank(), "A workout can only be set for TRAINING");
@@ -73,13 +74,13 @@ public class WriteTools {
                     "Progressive overload: base loads on list_logs. Add load when the last sets were clean and the equipment allows the increment, " +
                     "otherwise keep the load and add reps within the exercise's rep range; put the rep goal in the reason. " +
                     "A load more than 10% above the progression load is refused. Needs a read and write token")
-    public SessionResponse writeSession(
+    public SessionResponse writeSession(McpSyncRequestContext context,
             @McpToolParam(description = "Day as YYYY-MM-DD. Leave out for today (UTC)", required = false) String date,
             @McpToolParam(description = "The exercises in order, 1 to 12: exerciseId, sets (1 to 10), targetLoadLb (leave out for " +
                     "bodyweight, timed or cardio), and a short reason such as 'aim for 8 reps'") List<ProposedExercise> exercises,
             @McpToolParam(description = "Why today looks like this, one short line per note", required = false) List<String> notes) {
         String detail = "date=" + date + " exercises=" + (exercises == null ? 0 : exercises.size());
-        return caller.call("write_session", McpScope.READ_WRITE, detail, principal ->
+        return caller.call(context, "write_session", McpScope.READ_WRITE, detail, principal ->
                 sessions.write(principal.userId(), dateOr(date, today()), new AiSessionWriter(exercises, notes)));
     }
 

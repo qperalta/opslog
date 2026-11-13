@@ -19,6 +19,7 @@ public class McpToken {
     @Enumerated(EnumType.STRING) @Column(nullable = false, length=10) private McpScope scope;
     @Column(name="created_at", nullable = false, updatable = false) private Instant createdAt;
     @Column(name="last_used_at") private Instant lastUsedAt;
+    @Column(name="client_name", length=MAX_NAME) private String clientName;
     @Column(name="revoked_at") private Instant revokedAt;
 
     protected McpToken() {}
@@ -44,6 +45,7 @@ public class McpToken {
     public McpScope getScope() { return scope; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getLastUsedAt() { return lastUsedAt; }
+    public String getClientName() { return clientName; }
     public Instant getRevokedAt() { return revokedAt; }
 
     public boolean isActive() { return revokedAt == null; }
@@ -57,6 +59,14 @@ public class McpToken {
     public void markUsed(Instant when) {
         Require.that(isActive(), "A revoked token cannot be used");
         lastUsedAt = when;
+    }
+
+    public void recordClient(String client) {
+        if(client == null || client.isBlank()) return;
+        String trimmed = client.strip();
+        clientName = trimmed.length() <= MAX_NAME
+                ? trimmed
+                : trimmed.substring(0, MAX_NAME);
     }
 
     public boolean allows(McpScope needed) { return isActive() && scope.allows(needed); }

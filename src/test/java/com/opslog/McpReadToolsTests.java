@@ -115,6 +115,14 @@ class McpReadToolsTests {
     }
 
     @Test
+    void toolCallRecordsTheClientNameOnTheToken() throws Exception {
+        call("get_plan", "{}");
+
+        // the test client introduces itself as "test" in the initialize request
+        assertEquals("test", tokenService.list(owner.getId()).getFirst().clientName());
+    }
+
+    @Test
     void getPlanReturnsTheWeek() throws Exception {
         long template = templates.findAll().getFirst().getId();
         programs.choose(owner.getId(), new UserProgramRequest(template, null));

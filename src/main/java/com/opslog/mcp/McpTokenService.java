@@ -57,4 +57,9 @@ public class McpTokenService {
         token.revoke(Instant.now());
         return McpTokenResponse.from(token);
     }
+
+    /* called on every tool call; the token id comes from the authenticated principal */
+    public void recordClient(long tokenId, String clientName) {
+        tokens.findById(tokenId).ifPresent(token -> token.recordClient(clientName));
+    }
 }
