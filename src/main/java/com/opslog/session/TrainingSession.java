@@ -22,6 +22,7 @@ import java.util.Optional;
 public class TrainingSession {
 
     private static final int MAX_RATIONALE = 1000;
+    static final int MAX_EXERCISES = 20;
 
     @Id
     @GeneratedValue(strategy=GenerationType.IDENTITY)
@@ -95,8 +96,18 @@ public class TrainingSession {
     }
 
     public SessionExercise addExercise(Exercise exercise, Exercise substitutedFor, int sets, BigDecimal targetLoadLb, boolean mainLift, String reason) {
-        SessionExercise item = new SessionExercise(this, exercises.size() + 1, exercise, substitutedFor, sets, targetLoadLb, mainLift, reason);
+        SessionExercise item = new SessionExercise(this, exercises.size() + 1, exercise, substitutedFor, sets, targetLoadLb, mainLift, reason, false);
         exercises.add(item);
+        return item;
+    }
+
+    /* the member adds an exercise mid-workout; the ones at and after the position move down one */
+    public SessionExercise insertExercise(int position, Exercise exercise, int sets, BigDecimal targetLoadLb) {
+        Require.that(exercises.size() < MAX_EXERCISES, "A session can have at most " + MAX_EXERCISES + " exercises");
+        Require.that(position >= 1 && position <= exercises.size() + 1, "Position must be between 1 and " + (exercises.size() + 1));
+        exercises.stream().filter(item -> item.getPosition() >= position).forEach(SessionExercise::moveDown);
+        SessionExercise item = new SessionExercise(this, position, exercise, null, sets, targetLoadLb, false, null, true);
+        exercises.add(position - 1, item);
         return item;
     }
 }

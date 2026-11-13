@@ -1,6 +1,8 @@
 package com.opslog.session;
 
+import com.opslog.catalog.CustomExerciseService;
 import com.opslog.catalog.Exercise;
+import com.opslog.catalog.ExerciseNotFoundException;
 import com.opslog.checkin.CheckIn;
 import com.opslog.checkin.CheckInRepository;
 import com.opslog.checkin.TrainingTier;
@@ -38,10 +40,11 @@ public class SessionService {
     private final CheckInRepository checkIns;
     private final SessionGenerator generator;
     private final ProgressionService progression;
+    private final CustomExerciseService customExercises;
 
     SessionService(TrainingSessionRepository sessions, SessionCatalog catalog, PlanDayRepository days, PlanService planService,
                    ProgramService programService, CheckInRepository checkIns, SessionGenerator generator,
-                   ProgressionService progression) {
+                   ProgressionService progression, CustomExerciseService customExercises) {
         this.sessions = sessions;
         this.catalog = catalog;
         this.days = days;
@@ -50,6 +53,7 @@ public class SessionService {
         this.checkIns = checkIns;
         this.generator = generator;
         this.progression = progression;
+        this.customExercises = customExercises;
     }
 
     /* the stored session, or a new one the first time */
@@ -84,6 +88,27 @@ public class SessionService {
         if(skipped) item.skip();
         else item.reactivate();
         return SessionExerciseResponse.from(item);
+    }
+
+    /* the member inserts an exercise mid-workout; a new name becomes their own custom exercise */
+    public SessionResponse insertExercise(long userId, LocalDate date, InsertExerciseRequest request) {
+        TrainingSession session = sessions.findByUserIdAndDate(userId, date)
+                .orElseThrow(() -> new IllegalArgumentException("There is no session for " + date + " yet"));
+        Require.that((request.exerciseId() == null) != (request.newExercise() == null),
+                "Pick an exercise from the list or name a new one, not both");
+        Exercise exercise = request.exerciseId() != null
+                ? catalog.findVisible(request.exerciseId(), userId).orElseThrow(() -> new ExerciseNotFoundException(request.exerciseId()))
+                : findOrCreate(userId, request);
+        session.insertExercise(request.position(), unproxy(exercise), request.sets(), request.targetLoadLb());
+        return SessionResponse.from(sessions.saveAndFlush(session));
+    }
+
+    /* a name already in the list (any case) is reused instead of duplicated */
+    private Exercise findOrCreate(long userId, InsertExerciseRequest request) {
+        return catalog.findVisibleByName(request.newExercise().name(), userId).orElseGet(() -> {
+            long id = customExercises.create(userId, request.newExercise()).id();
+            return catalog.findVisible(id, userId).orElseThrow();
+        });
     }
 
     private void removeUnlogged(long userId, LocalDate date) {

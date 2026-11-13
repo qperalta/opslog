@@ -54,13 +54,18 @@ public class SessionExercise {
     @Column(nullable=false)
     private boolean skipped;
 
+    /* inserted by the member during the workout */
+    @Column(name="ad_hoc", nullable=false, updatable=false)
+    private boolean adHoc;
+
     @OneToMany(mappedBy="sessionExercise", cascade=CascadeType.ALL, orphanRemoval=true)
     @OrderBy("setNumber")
     private List<LoggedSet> loggedSets = new ArrayList<>();
 
     protected SessionExercise() {}
 
-    SessionExercise(TrainingSession session, int position, Exercise exercise, Exercise substitutedFor, int sets, BigDecimal targetLoadLb, boolean mainLift, String reason) {
+    SessionExercise(TrainingSession session, int position, Exercise exercise, Exercise substitutedFor, int sets, BigDecimal targetLoadLb,
+                    boolean mainLift, String reason, boolean adHoc) {
         Require.that(session != null, "Session is required");
         Require.that(position > 0, "Position must be greater than zero");
         Require.that(exercise != null, "Exercise is required");
@@ -75,6 +80,7 @@ public class SessionExercise {
         this.targetLoadLb = targetLoadLb;
         this.mainLift = mainLift;
         this.reason = reason;
+        this.adHoc = adHoc;
     }
 
     public Long getId() { return id; }
@@ -86,6 +92,7 @@ public class SessionExercise {
     public BigDecimal getTargetLoadLb() { return targetLoadLb; }
     public boolean isMainLift() { return mainLift; }
     public boolean isSkipped() { return skipped; }
+    public boolean isAdHoc() { return adHoc; }
     public String getReason() { return reason; }
 
     public List<LoggedSet> getLoggedSets() { return Collections.unmodifiableList(loggedSets); }
@@ -101,6 +108,9 @@ public class SessionExercise {
     }
 
     public void reactivate() { skipped = false; }
+
+    /* an exercise was inserted above this one */
+    void moveDown() { position++; }
 
     /* numbers continue after the highest one, so a deleted set leaves a gap */
     public LoggedSet logSet(Integer reps, Integer durationSeconds, BigDecimal loadLb, boolean clean) {

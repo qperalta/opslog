@@ -3,6 +3,8 @@ package com.opslog.session;
 import com.opslog.auth.CurrentUser;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -33,6 +35,12 @@ public class SessionController {
     @PostMapping("/{date}/rebuild")
     public SessionResponse rebuild(@PathVariable @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate date) {
         return sessionService.rebuild(currentUser.id(), date);
+    }
+
+    @PostMapping("/{date}/exercises")
+    public ResponseEntity<SessionResponse> insertExercise(@PathVariable @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate date,
+                                                          @Valid @RequestBody InsertExerciseRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(sessionService.insertExercise(currentUser.id(), date, request));
     }
 
     @PutMapping("/{date}/exercises/{position}/skipped")
