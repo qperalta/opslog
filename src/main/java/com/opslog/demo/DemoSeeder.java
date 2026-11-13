@@ -48,10 +48,10 @@ public class DemoSeeder {
     static final String HOME = "Kaimana Downtown";
     static final String SMALL_GYM = "Kaimana Kapolei";
 
-    /* sleep and soreness per day, oldest first: mostly Full, some Reduced and Recovery mornings */
+    /* sleep and soreness for each training day, oldest first (8 training days in two weeks):
+     *  mostly Full, two Reduced and two Recovery mornings, whatever weekday the seed runs on */
     private static final int[][] MORNINGS = {
-            {4, 2}, {5, 1}, {3, 3}, {4, 2}, {2, 4}, {4, 1}, {5, 2},
-            {4, 2}, {3, 3}, {5, 1}, {4, 2}, {4, 2}, {2, 5}, {5, 1}};
+            {4, 2}, {5, 1}, {3, 3}, {4, 2}, {2, 4}, {4, 1}, {3, 3}, {2, 5}};
     /* by training day: one at the small gym (substitutions), one skipped accessory, one hard top set (load holds) */
     private static final int SMALL_GYM_DAY = 4;
     private static final int SKIP_DAY = 2;
@@ -125,7 +125,8 @@ public class DemoSeeder {
             WorkoutResponse workout = workouts.get(trainingDay % workouts.size());
             planDays.setDay(userId, date, new PlanDayRequest(PlanMode.TRAINING, workout.id(), null, false), Actor.USER);
             String gym = trainingDay == SMALL_GYM_DAY ? SMALL_GYM : HOME;
-            checkIns.save(userId, date, new CheckInRequest(MORNINGS[day][0], MORNINGS[day][1], locationIds.get(gym)));
+            checkIns.save(userId, date, new CheckInRequest(MORNINGS[trainingDay % MORNINGS.length][0],
+                    MORNINGS[trainingDay % MORNINGS.length][1], locationIds.get(gym)));
             logSession(userId, date, sessions.get(userId, date), trainingDay, equipment);
             trainingDay++;
         }
