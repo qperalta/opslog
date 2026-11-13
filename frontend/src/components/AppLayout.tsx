@@ -8,8 +8,9 @@ import { useAuth } from '../auth/AuthContext'
 import { todayLocal } from '../checkin/dates'
 import { useCheckIn } from '../checkin/queries'
 import { NAV_ITEMS } from './navItems'
+import { useAiCoach } from '../mcp/queries'
 import { WakeBar } from './WakeBar'
-import { useKeepAwake } from './useKeepAwake.ts'
+import { useKeepAwake } from './useKeepAwake'
 
 /* phone-width frame: top bar, page content, bottom navigation */
 export function AppLayout() {
@@ -19,6 +20,7 @@ export function AppLayout() {
   // shares the Today screen's query, so it updates on check-in
   const checkIn = useCheckIn(todayLocal())
   const place = checkIn.data?.location?.name
+  const aiActive = useAiCoach().data?.active ?? false
   const current = NAV_ITEMS.find((item) => location.pathname.startsWith(item.path))?.path ?? false
 
   useKeepAwake()
@@ -62,12 +64,12 @@ export function AppLayout() {
           onChange={(_, path: string) => navigate(path)}
           sx={{ bgcolor: 'transparent' }}
         >
-          {NAV_ITEMS.map(({ path, label, Icon }) => (
+          {NAV_ITEMS.map(({ path, label, Icon, AiIcon }) => (
             <BottomNavigationAction
               key={path}
               value={path}
               label={label}
-              icon={<Icon />}
+              icon={aiActive && AiIcon ? <AiIcon /> : <Icon />}
               sx={{ minWidth: 0, px: 0.5 }}
             />
           ))}
