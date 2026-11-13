@@ -24,7 +24,7 @@ public record SessionResponse(LocalDate date, SessionStatus status, LookupRespon
                 List.of(), List.of(), null);
     }
 
-    static SessionResponse from(TrainingSession session, Map<Long, LoggedSetResponse> lastSets) {
+    static SessionResponse from(TrainingSession session, Map<Long, LoggedSetResponse> lastSets, Map<Long, ExerciseTiming> timings) {
         List<String> notes = session.getRationale() == null || session.getRationale().isBlank()
                 ? List.of()
                 : List.of(session.getRationale().split("\n"));
@@ -34,7 +34,7 @@ public record SessionResponse(LocalDate date, SessionStatus status, LookupRespon
         return new SessionResponse(session.getDate(), SessionStatus.READY, lookup(session.getWorkout()),
                 new LookupResponse(session.getTier().getId(), session.getTier().getName()),
                 SessionExerciseResponse.kindOf(session.getTier()), location, session.getSource(), notes,
-                session.getExercises().stream().map(item -> SessionExerciseResponse.from(item, lastSets)).toList(), session.getCreatedAt());
+                session.getExercises().stream().map(item -> SessionExerciseResponse.from(item, lastSets, timings)).toList(), session.getCreatedAt());
     }
 
     private static LookupResponse lookup(TemplateDay workout) {

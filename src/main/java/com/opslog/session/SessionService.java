@@ -41,10 +41,11 @@ public class SessionService {
     private final SessionGenerator generator;
     private final ProgressionService progression;
     private final CustomExerciseService customExercises;
+    private final ExerciseTimingService timings;
 
     SessionService(TrainingSessionRepository sessions, SessionCatalog catalog, PlanDayRepository days, PlanService planService,
                    ProgramService programService, CheckInRepository checkIns, SessionGenerator generator,
-                   ProgressionService progression, CustomExerciseService customExercises) {
+                   ProgressionService progression, CustomExerciseService customExercises, ExerciseTimingService timings) {
         this.sessions = sessions;
         this.catalog = catalog;
         this.days = days;
@@ -54,6 +55,7 @@ public class SessionService {
         this.generator = generator;
         this.progression = progression;
         this.customExercises = customExercises;
+        this.timings = timings;
     }
 
     /* the stored session, or a new one the first time */
@@ -100,6 +102,10 @@ public class SessionService {
                 ? catalog.findVisible(request.exerciseId(), userId).orElseThrow(() -> new ExerciseNotFoundException(request.exerciseId()))
                 : findOrCreate(userId, request);
         session.insertExercise(request.position(), unproxy(exercise), request.sets(), request.targetLoadLb());
+        // times typed on the add card become the member's own for this exercise; blank keeps what they had
+        if(request.holdSeconds() != null || request.restSeconds() != null) {
+            timings.set(userId, exercise.getId(), request.holdSeconds(), request.restSeconds());
+        }
         return respond(sessions.saveAndFlush(session));
     }
 
@@ -154,7 +160,8 @@ public class SessionService {
     }
 
     private SessionResponse respond(TrainingSession session) {
-        return SessionResponse.from(session, progression.lastSets(session.getUserId(), session.getDate()));
+        return SessionResponse.from(session, progression.lastSets(session.getUserId(), session.getDate()),
+                timings.forMember(session.getUserId()));
     }
 
     /* planning the week creates the day if the planner has not run yet */

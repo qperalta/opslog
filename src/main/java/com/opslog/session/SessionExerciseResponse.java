@@ -12,19 +12,23 @@ import java.util.Map;
 
 public record SessionExerciseResponse(long id, int position, Long exerciseId, String name, String kind, String target, int sets,
                                       BigDecimal targetLoadLb, boolean mainLift, LookupResponse substitutedFor, String reason, boolean skipped,
-                                      boolean adHoc, List<LoggedSetResponse> logged, LoggedSetResponse lastTime) {
+                                      boolean adHoc, List<LoggedSetResponse> logged, LoggedSetResponse lastTime,
+                                      Integer holdSeconds, Integer restSeconds) {
 
-    static SessionExerciseResponse from(SessionExercise item) { return from(item, Map.of()); }
+    static SessionExerciseResponse from(SessionExercise item) { return from(item, Map.of(), Map.of()); }
 
-    /* lastTime = the last set of this exercise in an earlier session, or null */
-    static SessionExerciseResponse from(SessionExercise item, Map<Long, LoggedSetResponse> lastSets) {
+    /* lastTime = the last set of this exercise in an earlier session, or null;
+       holdSeconds and restSeconds = the member's own times for this exercise, null for the defaults */
+    static SessionExerciseResponse from(SessionExercise item, Map<Long, LoggedSetResponse> lastSets, Map<Long, ExerciseTiming> timings) {
         Exercise exercise = item.getExercise();
+        ExerciseTiming timing = timings.get(exercise.getId());
         LookupResponse substitutedFor = item.getSubstitutedFor() == null
                 ? null
                 : new LookupResponse(item.getSubstitutedFor().getId(), item.getSubstitutedFor().getName());
         return new SessionExerciseResponse(item.getId(), item.getPosition(), exercise.getId(), exercise.getName(), kindOf(exercise),
                 exercise.describeTarget(), item.getSets(), item.getTargetLoadLb(), item.isMainLift(), substitutedFor, item.getReason(), item.isSkipped(),
-                item.isAdHoc(), item.getLoggedSets().stream().map(LoggedSetResponse::from).toList(), lastSets.get(exercise.getId()));
+                item.isAdHoc(), item.getLoggedSets().stream().map(LoggedSetResponse::from).toList(), lastSets.get(exercise.getId()),
+                timing == null ? null : timing.getHoldSeconds(), timing == null ? null : timing.getRestSeconds());
     }
 
     /* getClass() unwraps a lazy proxy */
