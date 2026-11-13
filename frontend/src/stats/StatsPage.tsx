@@ -1,5 +1,7 @@
-import { Box, Tab, Tabs } from '@mui/material'
+import ShareIcon from '@mui/icons-material/Share'
+import { Box, Button, Tab, Tabs } from '@mui/material'
 import { useSearchParams } from 'react-router'
+import { useNotify } from '../components/NotifyContext'
 import { PageHeader } from '../components/PageHeader'
 import { HistorySection } from '../history/HistorySection'
 import { DashboardSection } from './DashboardSection'
@@ -12,6 +14,7 @@ const TABS = [
 /* the tab lives in the URL so a refresh or a link keeps it */
 export function StatsPage() {
   const [params, setParams] = useSearchParams()
+  const notify = useNotify()
   const tab = TABS.some((item) => item.value === params.get('tab')) ? params.get('tab')! : 'dashboard'
 
   return (
@@ -20,6 +23,13 @@ export function StatsPage() {
         eyebrow="Progress"
         title="Stats"
         subtitle="Your training trends and logged sessions"
+        action={
+          // placeholder for the demo: sharing workouts and stats with other members comes later
+          <Button size="small" variant="outlined" startIcon={<ShareIcon />}
+                  onClick={() => notify('Sharing your workouts and stats with other members is coming soon', 'info')}>
+            Share
+          </Button>
+        }
       />
       <Tabs value={tab} onChange={(_, value: string) => setParams({ tab: value }, { replace: true })}
             variant="fullWidth" sx={{ mb: 2, borderBottom: 1, borderColor: 'divider' }}>
