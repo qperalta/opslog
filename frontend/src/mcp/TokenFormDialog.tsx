@@ -2,12 +2,15 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import {
   Alert,
+  Box,
   Button,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   FormControlLabel,
+  IconButton,
+  InputAdornment,
   Stack,
   Switch,
   TextField,
@@ -57,46 +60,78 @@ export function TokenFormDialog({ onClose }: { onClose: () => void }) {
     }
   }
 
-  const copy = async () => {
-    if(!secret) return
+  const copy = async (text: string, what: string) => {
     try {
-      await navigator.clipboard.writeText(secret)
-      notify('Token copied')
+      await navigator.clipboard.writeText(text)
+      notify(`${what} copied`)
     } catch {
-      notify('Copy failed; select the token and copy it by hand', 'error')
+      notify('Copy failed; select the text and copy it by hand', 'error')
     }
   }
 
+  // a read-only value with its own copy button
+  const copyField = (label: string, value: string, helperText?: string) => (
+    <TextField
+      fullWidth
+      size="small"
+      label={label}
+      value={value}
+      helperText={helperText}
+      slotProps={{
+        htmlInput: { readOnly: true },
+        input: {
+          endAdornment: (
+            <InputAdornment position="end">
+              <IconButton edge="end" aria-label={`Copy ${label.toLowerCase()}`} onClick={() => copy(value, label)}>
+                <ContentCopyIcon fontSize="small" />
+              </IconButton>
+            </InputAdornment>
+          )
+        }
+      }}
+    />
+  )
+
+  // second step: the secret is shown once, with what any MCP client needs to connect
   if(secret) {
+    const serverUrl = `${window.location.origin}/mcp`
     return (
       <Dialog open onClose={onClose} fullWidth maxWidth="sm">
-        <DialogTitle>Copy your token</DialogTitle>
+        <DialogTitle>Connect your AI assistant</DialogTitle>
         <DialogContent>
           <Alert severity="warning" sx={{ mb: 2 }}>
-            This is the only time the token is shown. Paste it into your AI assistant's settings now.
+            This is the only time the token is shown. Copy what you need before you close this window.
           </Alert>
-          <TextField
-            fullWidth
-            label="Token"
-            value={secret}
-            slotProps={{ htmlInput: { readOnly: true } }}
-          />
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{ mt: 2 }}>
-            Server URL: {window.location.origin}/mcp
+          <Stack spacing={2} sx={{ pt: 1 }}>
+            {copyField('Server URL', serverUrl)}
+            {copyField('Header name', 'Authorization')}
+            {copyField('Header value', `Bearer ${secret}`, 'Include the word Bearer and the space after it')}
+          </Stack>
+          <Typography variant="subtitle2" sx={{ mt: 3, mb: 1 }}>How to connect</Typography>
+          <Box component="ol" sx={{ m: 0, pl: 2.5, '& li': { mb: 1 } }}>
+            <Typography component="li" variant="body2">
+              In your AI assistant, add a custom connector or MCP server. It is usually under Settings, in Connectors or Integrations.
+            </Typography>
+            <Typography component="li" variant="body2">
+              Enter the server URL. If you are asked for a transport, choose Streamable HTTP.
+            </Typography>
+            <Typography component="li" variant="body2">
+              For sign-in, choose none or API key, not OAuth. OpsLog uses this token instead of a sign-in page.
+            </Typography>
+            <Typography component="li" variant="body2">
+              Add a request header with the header name and header value above.
+            </Typography>
+            <Typography component="li" variant="body2">
+              Save, then ask your assistant something like "What is my OpsLog plan this week?" Once it connects, the Plan tab shows a sparkle and the Planner shows what it did.
+            </Typography>
+          </Box>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 2 }}>
+            If your assistant has a Bearer token or API key field instead of request headers, paste only the token there.
           </Typography>
+          {copyField('Token only', secret)}
         </DialogContent>
         <DialogActions>
-          <Button
-            startIcon={<ContentCopyIcon/>}
-            onClick={copy}
-          >Copy</Button>
-          <Button
-            variant="contained"
-            onClick={onClose}
-          >Done</Button>
+          <Button variant="contained" onClick={onClose}>Done</Button>
         </DialogActions>
       </Dialog>
     )
