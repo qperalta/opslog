@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -41,5 +42,19 @@ public class ProgressionService {
             if(next != null) loads.put(exercise.getId(), next);
         }
         return loads;
+    }
+
+    /* the last set logged for each exercise in its most recent earlier session; blank fields on Today fall back to it */
+    @Transactional(readOnly = true)
+    public Map<Long, LoggedSetResponse> lastSets(long userId, LocalDate date) {
+        Map<Long, LoggedSetResponse> last = new HashMap<>();
+        for(SessionExercise item : history.findLoggedBetween(userId, date.minusDays(HISTORY_DAYS), date)) {
+            Long exerciseId = item.getExercise().getId();
+            if(last.containsKey(exerciseId)) continue;
+            item.getLoggedSets().stream()
+                    .max(Comparator.comparingInt(LoggedSet::getSetNumber))
+                    .ifPresent(set -> last.put(exerciseId, LoggedSetResponse.from(set)));
+        }
+        return last;
     }
 }

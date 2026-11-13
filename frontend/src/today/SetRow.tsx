@@ -27,12 +27,19 @@ function schemaFor(kind: string) {
   })
 }
 
-// the last logged load, then the target load
-const startLoad = (item: SessionExercise) => item.logged.at(-1)?.loadLb ?? item.targetLoadLb
+// a blank weight logs the previous set today, then the planned load, then last time's
+const startLoad = (item: SessionExercise) => item.logged.at(-1)?.loadLb ?? item.targetLoadLb ?? item.lastTime?.loadLb ?? null
 
 function measureOf(set: LoggedSet, kind: string) {
   if (isStrength(kind)) return String(set.reps)
   return String(isCardio(kind) ? Math.round((set.durationSeconds ?? 0) / 60) : set.durationSeconds)
+}
+
+// a blank reps/seconds logs the previous set today, then last time's, then the target ("5-8 reps" -> 5)
+function startMeasure(item: SessionExercise) {
+  const previous = item.logged.at(-1) ?? item.lastTime
+  if (previous) return measureOf(previous, item.kind)
+  return fixedTarget(item) || targetText(item).split('-')[0]
 }
 
 const cell = { flex: 1, minWidth: 0 }
@@ -61,6 +68,7 @@ export function SetRow({ date, item, number, set, active, initialMeasure = '', o
   const [confirming, setConfirming] = useState(false)
   const target = { date, position: item.position }
   const placeholderLoad = startLoad(item)
+  const placeholderMeasure = startMeasure(item)
 
   if (set) {
     const toggleClean = () =>
@@ -117,7 +125,7 @@ export function SetRow({ date, item, number, set, active, initialMeasure = '', o
     // an empty field takes the value shown as its placeholder
     const values = {
       load: load.trim() || (placeholderLoad != null ? String(placeholderLoad) : ''),
-      measure: measure.trim() || fixedTarget(item),
+      measure: measure.trim() || placeholderMeasure,
     }
     const parsed = schemaFor(item.kind).safeParse(values)
     if (!parsed.success) {
@@ -164,7 +172,7 @@ export function SetRow({ date, item, number, set, active, initialMeasure = '', o
                    placeholder={placeholderLoad != null ? String(placeholderLoad) : 'BW'}
                    error={!!error} slotProps={{ htmlInput: { inputMode: 'decimal', 'aria-label': `Set ${number} weight in pounds` } }} />
         <TextField size="small" sx={cell} value={measure} disabled={!active} onChange={(event) => setMeasure(event.target.value)}
-                   placeholder={targetText(item)}
+                   placeholder={placeholderMeasure}
                    error={!!error} slotProps={{ htmlInput: { inputMode: 'numeric', 'aria-label': `Set ${number} ${measureLabel(item.kind).toLowerCase()}` } }} />
         <IconButton aria-label={removable ? `Remove set ${number}` : `Clear set ${number}`} onClick={onClear}
                     disabled={!active && !removable}>

@@ -139,4 +139,25 @@ class ProgressionApiTests {
         benchSets(other, yesterday, 4, 8, true);
         session(owner, today, 5, 1).andExpect(jsonPath("$.exercises[0].targetLoadLb").value(nullValue()));
     }
+
+    @Test
+    void lastTimeIsTheLastSetOfTheMostRecentSession() throws Exception {
+        session(owner, yesterday.minusDays(2), 5, 1);
+        benchSets(owner, yesterday.minusDays(2), 2, 5, true);
+        session(owner, yesterday, 5, 1);
+        benchSets(owner, yesterday, 3, 7, true);
+
+        session(owner, today, 5, 1)
+                .andExpect(jsonPath("$.exercises[0].lastTime.reps").value(7))
+                .andExpect(jsonPath("$.exercises[0].lastTime.loadLb").value(135.0))
+                .andExpect(jsonPath("$.exercises[0].lastTime.setNumber").value(3))
+                .andExpect(jsonPath("$.exercises[1].lastTime").value(nullValue()));
+    }
+
+    @Test
+    void anotherUsersSetsAreNotLastTime() throws Exception {
+        session(other, yesterday, 5, 1);
+        benchSets(other, yesterday, 4, 8, true);
+        session(owner, today, 5, 1).andExpect(jsonPath("$.exercises[0].lastTime").value(nullValue()));
+    }
 }

@@ -59,7 +59,7 @@ public class SessionService {
     /* the stored session, or a new one the first time */
     public SessionResponse get(long userId, LocalDate date) {
         Optional<TrainingSession> stored = sessions.findByUserIdAndDate(userId, date);
-        return stored.map(SessionResponse::from).orElseGet(() -> build(userId, date, generator));
+        return stored.map(this::respond).orElseGet(() -> build(userId, date, generator));
     }
 
     /* after the check-in or the plan changes; refused once sets are logged */
@@ -100,7 +100,7 @@ public class SessionService {
                 ? catalog.findVisible(request.exerciseId(), userId).orElseThrow(() -> new ExerciseNotFoundException(request.exerciseId()))
                 : findOrCreate(userId, request);
         session.insertExercise(request.position(), unproxy(exercise), request.sets(), request.targetLoadLb());
-        return SessionResponse.from(sessions.saveAndFlush(session));
+        return respond(sessions.saveAndFlush(session));
     }
 
     /* a name already in the list (any case) is reused instead of duplicated */
@@ -150,7 +150,11 @@ public class SessionService {
         for(DraftExercise item : draft.exercises()) {
             session.addExercise(item.exercise(), item.substitutedFor(), item.sets(), item.targetLoadLb(), item.mainLift(), item.reason());
         }
-        return SessionResponse.from(sessions.saveAndFlush(session));
+        return respond(sessions.saveAndFlush(session));
+    }
+
+    private SessionResponse respond(TrainingSession session) {
+        return SessionResponse.from(session, progression.lastSets(session.getUserId(), session.getDate()));
     }
 
     /* planning the week creates the day if the planner has not run yet */

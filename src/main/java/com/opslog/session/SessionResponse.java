@@ -1,5 +1,6 @@
 package com.opslog.session;
 
+import com.opslog.logging.LoggedSetResponse;
 import com.opslog.catalog.LookupResponse;
 import com.opslog.plan.Actor;
 import com.opslog.plan.TemplateDay;
@@ -7,6 +8,7 @@ import com.opslog.plan.TemplateDay;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 /* tierKind lets the UI color the tier without a second lookup */
 public record SessionResponse(LocalDate date, SessionStatus status, LookupResponse workout, LookupResponse tier, String tierKind,
@@ -22,7 +24,7 @@ public record SessionResponse(LocalDate date, SessionStatus status, LookupRespon
                 List.of(), List.of(), null);
     }
 
-    static SessionResponse from(TrainingSession session) {
+    static SessionResponse from(TrainingSession session, Map<Long, LoggedSetResponse> lastSets) {
         List<String> notes = session.getRationale() == null || session.getRationale().isBlank()
                 ? List.of()
                 : List.of(session.getRationale().split("\n"));
@@ -32,7 +34,7 @@ public record SessionResponse(LocalDate date, SessionStatus status, LookupRespon
         return new SessionResponse(session.getDate(), SessionStatus.READY, lookup(session.getWorkout()),
                 new LookupResponse(session.getTier().getId(), session.getTier().getName()),
                 SessionExerciseResponse.kindOf(session.getTier()), location, session.getSource(), notes,
-                session.getExercises().stream().map(SessionExerciseResponse::from).toList(), session.getCreatedAt());
+                session.getExercises().stream().map(item -> SessionExerciseResponse.from(item, lastSets)).toList(), session.getCreatedAt());
     }
 
     private static LookupResponse lookup(TemplateDay workout) {

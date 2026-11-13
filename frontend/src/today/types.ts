@@ -19,6 +19,8 @@ export interface SessionExercise {
   skipped: boolean
   adHoc: boolean
   logged: LoggedSet[]
+  // the last set of this exercise in an earlier session
+  lastTime: LoggedSet | null
 }
 
 // strength sets log reps, timed and cardio sets log seconds
