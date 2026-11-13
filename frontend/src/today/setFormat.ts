@@ -13,6 +13,10 @@ export function describeSet(set: LoggedSet, kind: string) {
   return set.loadLb != null ? `${measure} @ ${set.loadLb} lb` : measure
 }
 
+// a blank weight logs the previous set today, then the planned load, then last time's
+export const fallbackLoad = (item: SessionExercise) =>
+  item.logged.at(-1)?.loadLb ?? item.targetLoadLb ?? item.lastTime?.loadLb ?? null
+
 // main lifts get the longest rest; the member's own rest time wins
 export const defaultRest = (item: SessionExercise) => item.mainLift ? 180 : isStrength(item.kind) ? 90 : 60
 export const restSeconds = (item: SessionExercise) => item.restSeconds ?? defaultRest(item)

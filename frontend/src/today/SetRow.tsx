@@ -7,7 +7,7 @@ import { z } from 'zod'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { useNotify } from '../components/NotifyContext'
 import { useDeleteSet, useSaveSet } from './queries'
-import { fixedTarget, isCardio, isStrength, measureLabel, targetText } from './setFormat'
+import { fallbackLoad, fixedTarget, isCardio, isStrength, measureLabel, targetText } from './setFormat'
 import type { LoggedSet, SessionExercise } from './types'
 
 const whole = /^\d+$/
@@ -27,8 +27,6 @@ function schemaFor(kind: string) {
   })
 }
 
-// a blank weight logs the previous set today, then the planned load, then last time's
-const startLoad = (item: SessionExercise) => item.logged.at(-1)?.loadLb ?? item.targetLoadLb ?? item.lastTime?.loadLb ?? null
 
 function measureOf(set: LoggedSet, kind: string) {
   if (isStrength(kind)) return String(set.reps)
@@ -56,20 +54,26 @@ interface Props {
   initialMeasure?: string
   // only on rows added with + Set
   onRemove?: () => void
+  // the weight typed in the active row, for continuous mode
+  onLoadChange?: (load: string) => void
   onLogged: () => void
 }
 
 /* a logged set, the next set to log, or a set that waits its turn */
-export function SetRow({ date, item, number, set, active, initialMeasure = '', onRemove, onLogged }: Props) {
+export function SetRow({ date, item, number, set, active, initialMeasure = '', onRemove, onLoadChange, onLogged }: Props) {
   const save = useSaveSet()
   const remove = useDeleteSet()
   const notify = useNotify()
-  const [load, setLoad] = useState('')
+  const [load, setLoadState] = useState('')
+  const setLoad = (value: string) => {
+    setLoadState(value)
+    onLoadChange?.(value)
+  }
   const [measure, setMeasure] = useState(initialMeasure)
   const [error, setError] = useState<string | null>(null)
   const [confirming, setConfirming] = useState(false)
   const target = { date, position: item.position }
-  const placeholderLoad = startLoad(item)
+  const placeholderLoad = fallbackLoad(item)
   const placeholderMeasure = startMeasure(item)
 
   if (set) {

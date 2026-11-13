@@ -1,16 +1,19 @@
 import AddIcon from '@mui/icons-material/Add'
 import BlockIcon from '@mui/icons-material/Block'
+import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import ReplayIcon from '@mui/icons-material/Replay'
+import StopIcon from '@mui/icons-material/Stop'
 import TimerOutlinedIcon from '@mui/icons-material/TimerOutlined'
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz'
-import { Box, Button, Card, CardContent, Chip, Stack, Typography } from '@mui/material'
+import { Box, Button, Card, CardContent, Chip, FormControlLabel, Stack, Switch, Typography } from '@mui/material'
 import { useState } from 'react'
 import { useNotify } from '../components/NotifyContext'
 import { HoldTimer } from './HoldTimer'
 import { useSetSkipped } from './queries'
-import { clock, holdSeconds, isStrength, measureLabel, restSeconds } from './setFormat'
+import { clock, fallbackLoad, holdSeconds, isStrength, measureLabel, restSeconds } from './setFormat'
 import { SetRow } from './SetRow'
 import { TimingEditor } from './TimingEditor'
+import { useContinuousRun } from './useContinuousRun'
 import type { SessionExercise } from './types'
 
 interface Props {
@@ -33,6 +36,19 @@ export function WorkoutCard({ date, item, onLogged }: Props) {
   const open = rows - item.logged.length
   const hold = holdSeconds(item)
   const [editingTimes, setEditingTimes] = useState(false)
+  // continuous mode: hold, log, rest, repeat; the run itself survives a reload
+  const [continuous, setContinuous] = useState(false)
+  const [draftLoad, setDraftLoad] = useState('')
+  const { run, secondsLeft, start, stop } = useContinuousRun(date, item)
+
+  const startRun = () => {
+    const typed = draftLoad.trim()
+    if (typed !== '' && !/^\d{1,4}(\.\d{1,2})?$/.test(typed)) {
+      notify('Weight must be under 10000 lb with at most 2 decimals', 'error')
+      return
+    }
+    start(hold, restSeconds(item), open, item.logged.length, typed !== '' ? Number(typed) : fallbackLoad(item))
+  }
 
   const setSkipped = (skipped: boolean) =>
     skip.mutate({ date, position: item.position, skipped }, {
@@ -103,7 +119,8 @@ export function WorkoutCard({ date, item, onLogged }: Props) {
             const number = item.logged.length + i + 1
             return (
               <SetRow key={i === 0 ? `open-0-${held.count}` : `open-${i}`} date={date} item={item} number={number}
-                      active={i === 0} initialMeasure={i === 0 ? held.seconds : ''}
+                      active={i === 0 && !run} initialMeasure={i === 0 ? held.seconds : ''}
+                      onLoadChange={i === 0 ? setDraftLoad : undefined}
                       onRemove={number > item.sets ? () => setAdded(Math.max(added - 1, 0)) : undefined}
                       onLogged={() => {
                         setHeld({ seconds: '', count: held.count + 1 })
@@ -113,22 +130,53 @@ export function WorkoutCard({ date, item, onLogged }: Props) {
           })}
         </Stack>
 
-        <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
-          {hold > 0 && open > 0 && (
-            <HoldTimer date={date} storageKey={`opslog.hold.${item.id}`} seconds={hold}
-                       onDone={(seconds) => setHeld({ seconds: String(seconds), count: held.count + 1 })} />
-          )}
-          <Button size="small" variant="outlined" startIcon={<AddIcon />} disabled={rows >= MAX_SETS}
-                  onClick={() => setAdded(added + 1)}>
-            Set
-          </Button>
-          {item.logged.length === 0 && (
-            <Button size="small" color="inherit" startIcon={<BlockIcon />} onClick={() => setSkipped(true)}
-                    disabled={skip.isPending}>
-              Skip
+        {run ? (
+          <Stack direction="row" spacing={1.5} role="timer" aria-live="polite"
+                 sx={{ mt: 1.5, p: 1.5, borderRadius: 1, alignItems: 'center',
+                   bgcolor: run.phase === 'hold' ? 'primary.main' : 'action.selected',
+                   color: run.phase === 'hold' ? 'primary.contrastText' : 'text.primary' }}>
+            <Box sx={{ flexGrow: 1 }}>
+              <Typography variant="h5" component="p" sx={{ fontWeight: 700, lineHeight: 1.1 }}>
+                {run.phase === 'hold' ? 'Hold' : 'Rest'} {clock(secondsLeft)}
+              </Typography>
+              <Typography variant="caption">
+                {run.phase === 'rest' ? 'Next: set' : 'Set'} {run.total - run.left + 1} of {run.total}
+                {run.load != null && ` · ${run.load} lb`}
+              </Typography>
+            </Box>
+            <Button variant="contained" color="inherit" startIcon={<StopIcon />} onClick={stop}
+                    sx={{ color: 'text.primary', bgcolor: 'background.paper' }}>
+              Stop
             </Button>
-          )}
-        </Stack>
+          </Stack>
+        ) : (
+          <Stack direction="row" spacing={1} sx={{ mt: 1.5, alignItems: 'center', flexWrap: 'wrap', rowGap: 1 }}>
+            {hold > 0 && open > 0 && continuous && (
+              <Button size="small" variant="contained" startIcon={<PlayArrowIcon />} onClick={startRun}>
+                Start exercise
+              </Button>
+            )}
+            {hold > 0 && open > 0 && !continuous && (
+              <HoldTimer date={date} storageKey={`opslog.hold.${item.id}`} seconds={hold}
+                         onDone={(seconds) => setHeld({ seconds: String(seconds), count: held.count + 1 })} />
+            )}
+            <Button size="small" variant="outlined" startIcon={<AddIcon />} disabled={rows >= MAX_SETS}
+                    onClick={() => setAdded(added + 1)}>
+              Set
+            </Button>
+            {item.logged.length === 0 && (
+              <Button size="small" color="inherit" startIcon={<BlockIcon />} onClick={() => setSkipped(true)}
+                      disabled={skip.isPending}>
+                Skip
+              </Button>
+            )}
+            {hold > 0 && open > 0 && (
+              <FormControlLabel sx={{ ml: 'auto', mr: 0 }}
+                                control={<Switch size="small" checked={continuous} onChange={(_, on) => setContinuous(on)} />}
+                                label={<Typography variant="body2">Continuous</Typography>} />
+            )}
+          </Stack>
+        )}
       </CardContent>
     </Card>
   )

@@ -25,6 +25,7 @@ import { clock, describeSet, isStrength, restSeconds } from './setFormat'
 import type { Session, SessionExercise } from './types'
 import { useStoredTimer } from './useStoredTimer'
 import { useWakeLock } from './useWakeLock'
+import { clearRuns } from './useContinuousRun'
 import { useWorkoutMode } from './useWorkoutMode'
 import { WorkoutCard } from './WorkoutCard'
 
@@ -210,6 +211,7 @@ function ReadySession({ date, session, workout, outOfDate, rebuilding, onRebuild
           <Button variant="contained" fullWidth sx={{ mb: 2 }} onClick={() => {
             setRestEndsAt(null)
             setInsertAt(null)
+            clearRuns(session.exercises.map((item) => item.id))
             workout.finish()
             notify('Workout finished')
           }}>
