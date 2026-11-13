@@ -13,6 +13,8 @@ import { DayDialog } from './DayDialog'
 import { ProgramForm } from './ProgramForm'
 import { useProgram, usePrograms, useWeek } from './queries'
 import type { Actor, PlanDay, Workout } from './types'
+import { CoachCard } from '../mcp/CoachCard'
+import { useAiCoach } from '../mcp/queries'
 
 const SET_BY: Record<Actor, string> = { USER: 'Set by you', RULES: 'Planned by the rules engine', AGENT: 'Set by your AI coach' }
 
@@ -24,12 +26,14 @@ export function PlannerPage() {
   const program = useProgram()
   const programs = usePrograms()
   const week = useWeek(weekOf, !!program.data)
-
+  const coach = useAiCoach()
   const template = programs.data?.find((item) => item.id === program.data?.template.id)
   const workoutsById = new Map<number, Workout>(programs.data?.flatMap((item) => item.workouts).map((w) => [w.id, w]) ?? [])
   const thisWeek = week.data && today >= week.data.start && today <= week.data.end
   const workoutCount = week.data?.days.filter((day) => day.workout).length ?? 0
   const lockedCount = week.data?.days.filter((day) => day.locked).length ?? 0
+  const activeCoach = program.data && !changing && coach.data?.active ? coach.data : null
+  const programSummary = [template?.trainingDays.map((day) => labelOf(day).slice(0, 3)).join(', '), program.data?.location?.name].filter(Boolean).join(' · ')
 
   return (
     <>
@@ -59,7 +63,9 @@ export function PlannerPage() {
       {program.isPending && <LinearProgress />}
       {program.isError && <Alert severity="error">{program.error.message}</Alert>}
 
-      {program.isSuccess && (
+      {activeCoach && <CoachCard coach={activeCoach} programSummary={programSummary} />}
+
+      {program.isSuccess && !activeCoach && (
         <Card sx={{ mb: 2 }}>
           <CardContent>
             {!program.data || changing ? (
