@@ -1,11 +1,12 @@
 import PlaceIcon from '@mui/icons-material/Place'
 import {
-  AppBar, BottomNavigation, BottomNavigationAction, Box, Chip, Container, Paper, Toolbar, Typography, alpha
+  AppBar, Avatar, BottomNavigation, BottomNavigationAction, Box, Chip, Container, IconButton, Paper, Toolbar, Tooltip, Typography, alpha
 } from '@mui/material'
 import { Outlet, useLocation, useNavigate } from 'react-router'
 import emblem from '../assets/emblem.png'
 import { useAuth } from '../auth/AuthContext'
 import { todayLocal } from '../checkin/dates'
+import { initialsOf } from './format'
 import { useCheckIn } from '../checkin/queries'
 import { NAV_ITEMS } from './navItems'
 import { useAiCoach } from '../mcp/queries'
@@ -31,16 +32,26 @@ export function AppLayout() {
         <Container maxWidth="sm" disableGutters>
           <Toolbar>
             <Box component="img" src={emblem} alt="" sx={{ width: 28, height: 28, mr: 1.5 }} />
-            <Typography variant="h6" sx={{ flexGrow: 1 }}>
-              OpsLog
-            </Typography>
-            {place && (
-              <Chip size="small" icon={<PlaceIcon />} label={place} aria-label={`Training at ${place}`}
-                    sx={{ mr: 1, maxWidth: 150, color: 'inherit', bgcolor: 'rgba(255,255,255,0.15)', '& .MuiChip-icon': { color: 'inherit' } }} />
-            )}
-            <Typography variant="body2" sx={{ mr: 1, display: { xs: 'none', sm: 'block' } }}>
-              {user?.displayName}
-            </Typography>
+            <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+              <Typography variant="h6" sx={{ lineHeight: 1.2 }}>
+                OpsLog
+              </Typography>
+              {/* today's location, small, under the title */}
+              {place && (
+                <Chip size="small" icon={<PlaceIcon />} label={place} aria-label={`Training at ${place}`}
+                      sx={{ height: 20, maxWidth: 200, fontSize: '0.7rem', color: 'inherit', bgcolor: 'rgba(255,255,255,0.15)',
+                        '& .MuiChip-icon': { color: 'inherit', fontSize: 14 }, '& .MuiChip-label': { px: 0.75 } }} />
+              )}
+            </Box>
+            {/* the member's initials; opens their Stats */}
+            <Tooltip title={user?.displayName ?? 'Stats'}>
+              <IconButton color="inherit" onClick={() => navigate('/stats')} aria-label="Your stats" sx={{ p: 0.5 }}>
+                <Avatar sx={{ width: 34, height: 34, fontSize: '0.875rem', fontWeight: 600, color: 'inherit',
+                  bgcolor: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.7)' }}>
+                  {initialsOf(user?.displayName)}
+                </Avatar>
+              </IconButton>
+            </Tooltip>
           </Toolbar>
           <WakeBar />
         </Container>
