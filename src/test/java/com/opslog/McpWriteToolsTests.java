@@ -6,6 +6,8 @@ import com.opslog.auth.UserAccountRepository;
 import com.opslog.checkin.CheckInRequest;
 import com.opslog.checkin.CheckInService;
 import com.opslog.location.LocationRepository;
+import com.opslog.mcp.AiCoachResponse;
+import com.opslog.mcp.AiCoachService;
 import com.opslog.mcp.McpAuditEntry;
 import com.opslog.mcp.McpAuditService;
 import com.opslog.mcp.McpOutcome;
@@ -61,6 +63,7 @@ class McpWriteToolsTests {
     @Autowired CheckInService checkIns;
     @Autowired LocationRepository locations;
     @Autowired SessionService sessions;
+    @Autowired AiCoachService coach;
 
     private final LocalDate today = LocalDate.now(ZoneOffset.UTC);
     private final LocalDate tomorrow = LocalDate.now(ZoneOffset.UTC).plusDays(1);
@@ -243,5 +246,42 @@ class McpWriteToolsTests {
         assertTrue(JsonPath.<Boolean>read(result, "$.result.isError"));
         assertEquals(Actor.RULES, sessions.get(owner.getId(), today).source());
         assertEquals(McpOutcome.DENIED, audit.recent(owner.getId()).getFirst().getOutcome());
+    }
+
+    @Test
+    void agentLeavesASummaryAndTheNextOneReplacesIt() throws Exception {
+        String secret = token(McpScope.READ_WRITE);
+
+        call(secret, "set_coach_summary", """
+                {"summary":"  Four days this week; Friday is lighter after a short night.  "}""");
+        String result = call(secret, "set_coach_summary", """
+                {"summary":"Rest on Wednesday, then back to Upper B."}""");
+
+        assertFalse(JsonPath.<Boolean>read(result, "$.result.isError"));
+        AiCoachResponse status = coach.status(owner.getId());
+        assertEquals("Rest on Wednesday, then back to Upper B.", status.summary());
+        assertNotNull(status.summaryAt());
+        McpAuditEntry entry = audit.recent(owner.getId()).getFirst();
+        assertEquals("set_coach_summary", entry.getTool());
+        assertEquals(McpOutcome.OK, entry.getOutcome());
+    }
+
+    @Test
+    void readTokenCannotLeaveASummary() throws Exception {
+        String result = call(token(McpScope.READ), "set_coach_summary", """
+                {"summary":"Four days this week."}""");
+
+        assertTrue(JsonPath.<Boolean>read(result, "$.result.isError"));
+        assertNull(coach.status(owner.getId()).summary());
+        assertEquals(McpOutcome.DENIED, audit.recent(owner.getId()).getFirst().getOutcome());
+    }
+
+    @Test
+    void blankSummaryIsRefused() throws Exception {
+        String result = call(token(McpScope.READ_WRITE), "set_coach_summary", """
+                {"summary":"   "}""");
+
+        assertTrue(JsonPath.<Boolean>read(result, "$.result.isError"));
+        assertEquals("Summary is required", audit.recent(owner.getId()).getFirst().getDetail());
     }
 }

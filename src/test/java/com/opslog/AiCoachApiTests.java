@@ -2,6 +2,7 @@ package com.opslog;
 
 import com.opslog.auth.UserAccount;
 import com.opslog.auth.UserAccountRepository;
+import com.opslog.mcp.AiCoachService;
 import com.opslog.mcp.IssuedMcpTokenResponse;
 import com.opslog.mcp.McpAuditService;
 import com.opslog.mcp.McpOutcome;
@@ -41,6 +42,7 @@ class AiCoachApiTests {
     @Autowired McpTokenService tokenService;
     @Autowired McpTokenRepository tokens;
     @Autowired McpAuditService audit;
+    @Autowired AiCoachService coach;
 
     private UserAccount owner;
     private UserAccount other;
@@ -75,6 +77,7 @@ class AiCoachApiTests {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.active").value(false))
                 .andExpect(jsonPath("$.clientName").value(nullValue()))
+                .andExpect(jsonPath("$.summary").value(nullValue()))
                 .andExpect(jsonPath("$.recent.length()").value(0));
     }
 
@@ -121,5 +124,15 @@ class AiCoachApiTests {
         coachOf(owner)
                 .andExpect(jsonPath("$.active").value(false))
                 .andExpect(jsonPath("$.clientName").value(nullValue()));
+    }
+
+    @Test
+    void summaryIsTheMembersOwn() throws Exception {
+        coach.setSummary(other.getId(), "Other member's week");
+        coach.setSummary(owner.getId(), "Four days this week");
+
+        coachOf(owner)
+                .andExpect(jsonPath("$.summary").value("Four days this week"))
+                .andExpect(jsonPath("$.summaryAt").isNotEmpty());
     }
 }

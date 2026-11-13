@@ -17,10 +17,12 @@ public class AiCoachService {
 
     private final McpTokenRepository tokens;
     private final McpAuditRepository audit;
+    private final CoachSummaryRepository summaries;
 
-    AiCoachService(McpTokenRepository tokens, McpAuditRepository audit) {
+    AiCoachService(McpTokenRepository tokens, McpAuditRepository audit, CoachSummaryRepository summaries) {
         this.tokens = tokens;
         this.audit = audit;
+        this.summaries = summaries;
     }
 
     public AiCoachResponse status(long userId) {
@@ -34,9 +36,24 @@ public class AiCoachService {
         List<AiActivityResponse> recent = audit.findTop5ByUserIdOrderByCreatedAtDesc(userId).stream()
                 .map(AiActivityResponse::from)
                 .toList();
+        Optional<CoachSummary> summary = summaries.findById(userId);
         return new AiCoachResponse(active,
                 latest.map(McpToken::getClientName).orElse(null),
                 latest.map(McpToken::getLastUsedAt).orElse(null),
+                summary.map(CoachSummary::getSummary).orElse(null),
+                summary.map(CoachSummary::getUpdatedAt).orElse(null),
                 recent);
+    }
+
+    // one summary per member: the first call creates it, later calls replace the text
+    @Transactional
+    public CoachSummaryResponse setSummary(long userId, String text) {
+        CoachSummary summary = summaries.findById(userId)
+                .map(existing -> {
+                    existing.rewrite(text);
+                    return existing;
+                })
+                .orElseGet(() -> new CoachSummary(userId, text));
+        return CoachSummaryResponse.from(summaries.save(summary));
     }
 }

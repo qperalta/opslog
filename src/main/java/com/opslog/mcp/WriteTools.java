@@ -33,14 +33,16 @@ public class WriteTools {
     private final ProgramService programs;
     private final LocationService locations;
     private final SessionService sessions;
+    private final AiCoachService coach;
 
     WriteTools(McpCaller caller, PlanDayService planDays, ProgramService programs, LocationService locations,
-               SessionService sessions) {
+               SessionService sessions, AiCoachService coach) {
         this.caller = caller;
         this.planDays = planDays;
         this.programs = programs;
         this.locations = locations;
         this.sessions = sessions;
+        this.coach = coach;
     }
 
     @McpTool(name="set_plan_day", annotations = @McpTool.McpAnnotations(readOnlyHint = false, destructiveHint = false, idempotentHint = true, openWorldHint = false),
@@ -82,6 +84,17 @@ public class WriteTools {
         String detail = "date=" + date + " exercises=" + (exercises == null ? 0 : exercises.size());
         return caller.call(context, "write_session", McpScope.READ_WRITE, detail, principal ->
                 sessions.write(principal.userId(), dateOr(date, today()), new AiSessionWriter(exercises, notes)));
+    }
+
+    @McpTool(name="set_coach_summary", annotations = @McpTool.McpAnnotations(readOnlyHint = false, destructiveHint = false, idempotentHint = true, openWorldHint = false),
+            description = "Leave the member a short summary of their plan, shown at the top of their Planner in OpsLog. " +
+                    "Call it after changing the plan or writing sessions: 2 to 4 plain sentences on what the coming days look like and why. " +
+                    "Replaces the previous summary. Needs a read and write token")
+    public CoachSummaryResponse setCoachSummary(McpSyncRequestContext context,
+            @McpToolParam(description = "The summary, 1 to " + CoachSummary.MAX_SUMMARY + " characters") String summary) {
+        String detail = "characters=" + (summary == null ? 0 : summary.strip().length());
+        return caller.call(context, "set_coach_summary", McpScope.READ_WRITE, detail, principal ->
+                coach.setSummary(principal.userId(), summary));
     }
 
     /* the workouts in the member's chosen program */
