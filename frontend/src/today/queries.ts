@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
-import type { InsertExerciseBody, LoggedSet, LoggedSetBody, Session, SessionExercise } from './types'
+import type { ExerciseTimingBody, InsertExerciseBody, LoggedSet, LoggedSetBody, Session, SessionExercise } from './types'
 
 // the first call builds the session; later calls return the stored one
 export const useSession = (date: string) =>
@@ -25,6 +25,16 @@ export function useInsertExercise() {
       // a new name is now one of the member's own exercises
       client.invalidateQueries({ queryKey: ['exercises'] })
     },
+  })
+}
+
+// saved per exercise, so every session that has it picks the times up
+export function useSetTiming() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({ exerciseId, body }: { exerciseId: number, body: ExerciseTimingBody }) =>
+      api<ExerciseTimingBody>(`/api/exercise-timings/${exerciseId}`, { method: 'PUT', body }),
+    onSuccess: () => client.invalidateQueries({ queryKey: ['sessions'] }),
   })
 }
 

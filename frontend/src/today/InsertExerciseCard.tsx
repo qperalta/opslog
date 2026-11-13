@@ -9,6 +9,9 @@ import type { Exercise, ExerciseRequest } from '../catalog/types'
 import { labelOf } from '../components/format'
 import { useNotify } from '../components/NotifyContext'
 import { useInsertExercise } from './queries'
+import { parseClock } from './setFormat'
+
+const inRange = (seconds: number | null, min: number, max: number) => seconds != null && seconds >= min && seconds <= max
 
 const isIntBetween = (value: string, min: number, max: number) =>
   /^\d+$/.test(value) && Number(value) >= min && Number(value) <= max
@@ -26,6 +29,9 @@ const schema = z
     movementPatternId: z.string(),
     primaryMuscleId: z.string(),
     target: z.string().trim(),
+    // M:SS or seconds; blank keeps the member's own or the default
+    hold: z.string().trim().refine((value) => value === '' || inRange(parseClock(value), 1, 600), 'Timer must be 0:01 to 10:00'),
+    rest: z.string().trim().refine((value) => value === '' || inRange(parseClock(value), 0, 900), 'Rest must be 0:00 to 15:00'),
   })
   .superRefine((values, ctx) => {
     if (!values.isNew) return
@@ -40,7 +46,7 @@ const schema = z
 
 type InsertValues = z.infer<typeof schema>
 
-const FIELDS = ['sets', 'targetLoadLb'] as const
+const FIELDS = ['sets', 'targetLoadLb', 'hold', 'rest'] as const
 
 const TARGET_LABEL: Record<string, string> = { STRENGTH: 'Reps', TIMED: 'Seconds', CARDIO: 'Minutes' }
 
@@ -78,6 +84,7 @@ export function InsertExerciseCard({ date, position, onDone }: Props) {
     resolver: zodResolver(schema),
     defaultValues: {
       name: '', isNew: false, sets: '3', targetLoadLb: '', kind: 'STRENGTH', movementPatternId: '', primaryMuscleId: '', target: '10',
+      hold: '', rest: '',
     },
   })
   const name = useWatch({ control, name: 'name' })
@@ -89,6 +96,9 @@ export function InsertExerciseCard({ date, position, onDone }: Props) {
   const found = (text: string) =>
     options.data?.items.find((option) => option.name.toLowerCase() === text.trim().toLowerCase())
   const isNew = name.trim() !== '' && query === name.trim() && !options.isFetching && !found(name)
+
+  // only timed exercises get a hold timer
+  const timed = (found(name)?.kind ?? (isNew ? kind : '')) === 'TIMED'
 
   // the schema only asks for kind, pattern and muscle when the name is new
   useEffect(() => setValue('isNew', isNew), [isNew, setValue])
@@ -105,6 +115,8 @@ export function InsertExerciseCard({ date, position, onDone }: Props) {
           newExercise: match ? null : newExercise(values),
           sets: Number(values.sets),
           targetLoadLb: values.targetLoadLb === '' ? null : Number(values.targetLoadLb),
+          holdSeconds: timed && values.hold !== '' ? parseClock(values.hold) : null,
+          restSeconds: values.rest !== '' ? parseClock(values.rest) : null,
         },
       })
       notify(`Added ${match?.name ?? values.name.trim()}`)
@@ -156,14 +168,22 @@ export function InsertExerciseCard({ date, position, onDone }: Props) {
             </>
           )}
           <Stack direction="row" spacing={1}>
-            <TextField size="small" label="Sets" type="number" fullWidth {...register('sets')}
+            <TextField size="small" label="Sets" slotProps={{ inputLabel: { shrink: true } }} type="number" fullWidth {...register('sets')}
                        error={!!errors.sets} helperText={errors.sets?.message} />
-            <TextField size="small" label="Weight (lb)" type="number" fullWidth {...register('targetLoadLb')}
+            <TextField size="small" label="Weight (lb)" slotProps={{ inputLabel: { shrink: true } }} type="number" fullWidth {...register('targetLoadLb')}
                        error={!!errors.targetLoadLb} helperText={errors.targetLoadLb?.message} />
             {isNew && TARGET_LABEL[kind] && (
               <TextField size="small" label={TARGET_LABEL[kind]} type="number" fullWidth {...register('target')}
                          error={!!errors.target} helperText={errors.target?.message} />
             )}
+          </Stack>
+          <Stack direction="row" spacing={1}>
+            {timed && (
+              <TextField size="small" label="Timer" slotProps={{ inputLabel: { shrink: true } }} placeholder="M:SS" fullWidth {...register('hold')}
+                         error={!!errors.hold} helperText={errors.hold?.message ?? 'Blank = the target'} />
+            )}
+            <TextField size="small" label="Rest" slotProps={{ inputLabel: { shrink: true } }} placeholder="M:SS" fullWidth {...register('rest')}
+                       error={!!errors.rest} helperText={errors.rest?.message ?? 'Blank = the default'} />
           </Stack>
           <Stack direction="row" spacing={1} sx={{ justifyContent: 'flex-end' }}>
             <Button color="inherit" onClick={onDone}>Cancel</Button>

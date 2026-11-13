@@ -35,10 +35,12 @@ function measureOf(set: LoggedSet, kind: string) {
   return String(isCardio(kind) ? Math.round((set.durationSeconds ?? 0) / 60) : set.durationSeconds)
 }
 
-// a blank reps/seconds logs the previous set today, then last time's, then the target ("5-8 reps" -> 5)
+// a blank reps/seconds logs the previous set today, then your own timer, then last time's, then the target ("5-8 reps" -> 5)
 function startMeasure(item: SessionExercise) {
-  const previous = item.logged.at(-1) ?? item.lastTime
-  if (previous) return measureOf(previous, item.kind)
+  const today = item.logged.at(-1)
+  if (today) return measureOf(today, item.kind)
+  if (item.holdSeconds != null) return String(item.holdSeconds)
+  if (item.lastTime) return measureOf(item.lastTime, item.kind)
   return fixedTarget(item) || targetText(item).split('-')[0]
 }
 

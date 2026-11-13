@@ -21,6 +21,9 @@ export interface SessionExercise {
   logged: LoggedSet[]
   // the last set of this exercise in an earlier session
   lastTime: LoggedSet | null
+  // the member's own times for this exercise; null = the default
+  holdSeconds: number | null
+  restSeconds: number | null
 }
 
 // strength sets log reps, timed and cardio sets log seconds
@@ -47,6 +50,14 @@ export interface InsertExerciseBody {
   newExercise: ExerciseRequest | null
   sets: number
   targetLoadLb: number | null
+  holdSeconds: number | null
+  restSeconds: number | null
+}
+
+// mirrors ExerciseTimingRequest; null = back to the default
+export interface ExerciseTimingBody {
+  holdSeconds: number | null
+  restSeconds: number | null
 }
 
 export interface Session {

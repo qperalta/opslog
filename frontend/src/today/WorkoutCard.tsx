@@ -1,14 +1,16 @@
 import AddIcon from '@mui/icons-material/Add'
 import BlockIcon from '@mui/icons-material/Block'
 import ReplayIcon from '@mui/icons-material/Replay'
+import TimerOutlinedIcon from '@mui/icons-material/TimerOutlined'
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz'
 import { Box, Button, Card, CardContent, Chip, Stack, Typography } from '@mui/material'
 import { useState } from 'react'
 import { useNotify } from '../components/NotifyContext'
 import { HoldTimer } from './HoldTimer'
 import { useSetSkipped } from './queries'
-import { clock, fixedTarget, isStrength, measureLabel, restSeconds } from './setFormat'
+import { clock, holdSeconds, isStrength, measureLabel, restSeconds } from './setFormat'
 import { SetRow } from './SetRow'
+import { TimingEditor } from './TimingEditor'
 import type { SessionExercise } from './types'
 
 interface Props {
@@ -29,7 +31,8 @@ export function WorkoutCard({ date, item, onLogged }: Props) {
   const [held, setHeld] = useState({ seconds: '', count: 0 })
   const rows = Math.min(Math.max(item.sets + added, item.logged.length), MAX_SETS)
   const open = rows - item.logged.length
-  const holdSeconds = item.kind === 'TIMED' ? Number(fixedTarget(item)) : 0
+  const hold = holdSeconds(item)
+  const [editingTimes, setEditingTimes] = useState(false)
 
   const setSkipped = (skipped: boolean) =>
     skip.mutate({ date, position: item.position, skipped }, {
@@ -69,6 +72,15 @@ export function WorkoutCard({ date, item, onLogged }: Props) {
           {item.targetLoadLb == null && isStrength(item.kind) && ' · Pick a working weight'}
           {` · rest ${clock(restSeconds(item))}`}
         </Typography>
+        {/* the member's own timer and rest, saved for this exercise */}
+        {editingTimes ? (
+          <TimingEditor item={item} onDone={() => setEditingTimes(false)} />
+        ) : (
+          <Button size="small" color="inherit" startIcon={<TimerOutlinedIcon />} onClick={() => setEditingTimes(true)}
+                  sx={{ mt: 0.5, px: 0.5, color: 'text.secondary' }}>
+            {hold > 0 ? `Timer ${clock(hold)} · ` : ''}Rest {clock(restSeconds(item))}
+          </Button>
+        )}
         {item.substitutedFor && (
           <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
             <SwapHorizIcon fontSize="small" color="action" />
@@ -102,8 +114,8 @@ export function WorkoutCard({ date, item, onLogged }: Props) {
         </Stack>
 
         <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
-          {holdSeconds > 0 && open > 0 && (
-            <HoldTimer date={date} storageKey={`opslog.hold.${item.id}`} seconds={holdSeconds}
+          {hold > 0 && open > 0 && (
+            <HoldTimer date={date} storageKey={`opslog.hold.${item.id}`} seconds={hold}
                        onDone={(seconds) => setHeld({ seconds: String(seconds), count: held.count + 1 })} />
           )}
           <Button size="small" variant="outlined" startIcon={<AddIcon />} disabled={rows >= MAX_SETS}
