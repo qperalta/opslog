@@ -13,7 +13,7 @@ public class WeekPlanner {
         Require.that(template != null, "Template is required");
         TemplateDay last = previous;
         for(PlanDay day:days) {
-            if(!day.isLocked()) day.schedule(pick(day, template, last));
+            if(!day.isLocked() || day.needsWorkout()) day.schedule(pick(day, template, last));
             if(day.isTraining()) last = day.getWorkout();
         }
     }

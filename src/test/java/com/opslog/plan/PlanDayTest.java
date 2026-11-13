@@ -44,6 +44,19 @@ class PlanDayTest {
     }
 
     @Test
+    void lockedTrainingDayWithoutAWorkoutIsFilledOnce() {
+        PlanDay day = new PlanDay(1L, LocalDate.of(2026, 11, 2));
+        day.edit(PlanMode.TRAINING, null, null, true, Actor.USER);
+        assertThat(day.needsWorkout()).isTrue();
+        day.schedule(upperA);
+        assertThat(day.getWorkout()).isEqualTo(upperA);
+        assertThat(day.getUpdatedBy()).isEqualTo(Actor.USER);
+        assertThatThrownBy(() -> day.schedule(null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("A locked day cannot be re-planned");
+    }
+
+    @Test
     void editRecordsTheActor() {
         PlanDay day = new PlanDay(1L, LocalDate.of(2026, 11, 2));
         day.edit(PlanMode.TRAINING, upperA, null, false, Actor.AGENT);

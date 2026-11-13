@@ -70,6 +70,9 @@ public class PlanDay {
 
     public boolean isTraining() { return workout != null; }
 
+    /* a Train day left on "Next in rotation"; the rules engine fills it even when locked */
+    public boolean needsWorkout() { return mode == PlanMode.TRAINING && workout == null; }
+
     /* user or agent edit; the locked-day guard lives in PlanDayService */
     public void edit(PlanMode mode, TemplateDay workout, Location location, boolean locked, Actor actor) {
         Require.that(mode != null, "Mode is required");
@@ -84,11 +87,12 @@ public class PlanDay {
 
     /* rules engine only */
     public void schedule(TemplateDay workout) {
-        Require.that(!locked, "A locked day cannot be re-planned");
+        Require.that(!locked || needsWorkout(), "A locked day cannot be re-planned");
         Require.that(mode != PlanMode.REST || workout == null, "A rest day cannot have a workout");
         if(Objects.equals(this.workout, workout)) return;
         this.workout = workout;
-        touch(Actor.RULES);
+        // a locked day stays "set by you"
+        if(!locked) touch(Actor.RULES);
     }
 
     private void touch(Actor actor) {

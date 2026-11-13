@@ -91,6 +91,20 @@ class WeekPlannerTest {
     }
 
     @Test
+    void lockedTrainingDayOnNextInRotationGetsItsWorkoutOnce() {
+        day(SATURDAY).edit(PlanMode.TRAINING, null, null, true, Actor.USER);
+        planner.plan(week, upperLower, null);
+        assertThat(workouts()).containsExactly("Upper A", "Lower A", "rest", "Upper B", "Lower B", "Upper A", "rest");
+        assertThat(day(SATURDAY).isLocked()).isTrue();
+        assertThat(day(SATURDAY).getUpdatedBy()).isEqualTo(Actor.USER);
+
+        // once filled it is locked like any other day: a rest day earlier in the week no longer moves it
+        day(MONDAY).edit(PlanMode.REST, null, null, false, Actor.USER);
+        planner.plan(week, upperLower, null);
+        assertThat(workouts()).containsExactly("rest", "Upper A", "rest", "Lower A", "Upper B", "Upper A", "rest");
+    }
+
+    @Test
     void workoutFromAnotherTemplateRestartsTheRotation() {
         ProgramTemplate fullBody = new ProgramTemplate("Full Body", "Three days", List.of(MONDAY));
         TemplateDay fullBodyA = fullBody.addDay("Full Body A");
