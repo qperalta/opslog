@@ -1,21 +1,19 @@
 import PlaceIcon from '@mui/icons-material/Place'
 import {
-  AppBar, Avatar, BottomNavigation, BottomNavigationAction, Box, Chip, Container, IconButton, Paper, Toolbar, Tooltip, Typography, alpha
+  AppBar, BottomNavigation, BottomNavigationAction, Box, Chip, Container, Paper, Toolbar, Typography, alpha
 } from '@mui/material'
 import { Outlet, useLocation, useNavigate } from 'react-router'
 import emblem from '../assets/emblem.png'
-import { useAuth } from '../auth/AuthContext'
 import { todayLocal } from '../checkin/dates'
-import { initialsOf } from './format'
 import { useCheckIn } from '../checkin/queries'
 import { NAV_ITEMS } from './navItems'
 import { useAiCoach } from '../mcp/queries'
+import { AvatarMenu } from '../notify/AvatarMenu'
 import { WakeBar } from './WakeBar'
 import { useKeepAwake } from './useKeepAwake'
 
 /* phone-width frame: top bar, page content, bottom navigation */
 export function AppLayout() {
-  const { user } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
   // shares the Today screen's query, so it updates on check-in
@@ -43,15 +41,8 @@ export function AppLayout() {
                         '& .MuiChip-icon': { color: 'inherit', fontSize: 14 }, '& .MuiChip-label': { px: 0.75 } }} />
               )}
             </Box>
-            {/* the member's initials; opens their Stats */}
-            <Tooltip title={user?.displayName ?? 'Stats'}>
-              <IconButton color="inherit" onClick={() => navigate('/stats')} aria-label="Your stats" sx={{ p: 0.5 }}>
-                <Avatar sx={{ width: 34, height: 34, fontSize: '0.875rem', fontWeight: 600, color: 'inherit',
-                  bgcolor: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.7)' }}>
-                  {initialsOf(user?.displayName)}
-                </Avatar>
-              </IconButton>
-            </Tooltip>
+            {/* the member's initials: what's new and a link to Stats */}
+            <AvatarMenu />
           </Toolbar>
           <WakeBar />
         </Container>
