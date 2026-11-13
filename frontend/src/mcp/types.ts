@@ -31,6 +31,8 @@ export interface AiCoach {
   active: boolean
   clientName: string | null
   lastActiveAt: string | null
+  summary: string | null
+  summaryAt: string | null
   recent: AiActivity[]
 }
 

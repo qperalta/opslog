@@ -11,7 +11,8 @@ const DID: Record<string, string> = {
   search_exercises: 'Searched the exercises',
   get_training_report: 'Read your training report',
   set_plan_day: 'Changed a plan day',
-  write_session: 'Wrote a session'
+  write_session: 'Wrote a session',
+  set_coach_summary: 'Wrote the summary'
 }
 
 // null when the call went through
@@ -27,6 +28,8 @@ interface Props {
 }
 
 export function CoachCard({ coach, programSummary }: Props) {
+  const latest = coach.recent[0]
+  const problem = latest ? problemOf(latest) : null
   return (
     <Card sx={{ mb: 2 }}>
       <CardContent>
@@ -41,20 +44,22 @@ export function CoachCard({ coach, programSummary }: Props) {
             </Box>
           </Stack>
           <Divider />
-          <Typography variant="overline" color="text.secondary" sx={{ lineHeight: 1 }}>Recent AI activity</Typography>
-          {coach.recent.length === 0 ? (
-            <Typography variant="body2" color="text.secondary">Nothing yet. Ask your assistant to look at your plan.</Typography>
-          ) : coach.recent.map((item, index) => {
-            const problem = problemOf(item)
-            return (
-              <Box key={`${item.at}-${index}`}>
-                <Typography variant="body2">{DID[item.tool] ?? item.tool}</Typography>
-                <Typography variant="caption" color={problem ? 'error' : 'text.secondary'}>
-                  {problem ? `${problem} · ` : ''}{timeAgo(item.at)}
-                </Typography>
-              </Box>
-            )
-            })}
+          {/* fixed height so the week planner stays in the same place; a long summary scrolls inside the box */}
+          <Box sx={{ height: 120, overflowY: 'auto', pr: 0.5 }}>
+            {coach.summary ? (
+              <Typography variant="body2" sx={{ whiteSpace: 'pre-line' }}>{coach.summary}</Typography>
+            ) : (
+              <Typography variant="body2" color="text.secondary">No summary yet. Ask your assistant to plan your week.</Typography>
+            )}
+          </Box>
+          {(coach.summaryAt || latest) && (
+            <Typography variant="caption" color={problem ? 'error' : 'text.secondary'}>
+              {[
+                coach.summaryAt && `Updated ${timeAgo(coach.summaryAt)}`,
+                latest && `Last: ${problem ?? DID[latest.tool] ?? latest.tool}, ${timeAgo(latest.at)}`
+              ].filter(Boolean).join(' · ')}
+            </Typography>
+          )}
         </Stack>
       </CardContent>
     </Card>
