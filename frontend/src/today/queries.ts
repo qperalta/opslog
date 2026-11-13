@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
-import type { LoggedSet, LoggedSetBody, Session, SessionExercise } from './types'
+import type { InsertExerciseBody, LoggedSet, LoggedSetBody, Session, SessionExercise } from './types'
 
 // the first call builds the session; later calls return the stored one
 export const useSession = (date: string) =>
@@ -11,6 +11,20 @@ export function useRebuildSession() {
   return useMutation({
     mutationFn: (date: string) => api<Session>(`/api/sessions/${date}/rebuild`, { method: 'POST' }),
     onSuccess: (session) => client.setQueryData(['sessions', session.date], session),
+  })
+}
+
+// the server moves the later exercises down, so the whole session comes back
+export function useInsertExercise() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({ date, body }: { date: string, body: InsertExerciseBody }) =>
+      api<Session>(`/api/sessions/${date}/exercises`, { method: 'POST', body }),
+    onSuccess: (session) => {
+      client.setQueryData(['sessions', session.date], session)
+      // a new name is now one of the member's own exercises
+      client.invalidateQueries({ queryKey: ['exercises'] })
+    },
   })
 }
 

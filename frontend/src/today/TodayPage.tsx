@@ -1,10 +1,12 @@
+import AddIcon from '@mui/icons-material/Add'
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import {
-  Accordion, AccordionDetails, AccordionSummary, Alert, AlertTitle, Box, Button, Card, CardContent, Chip, LinearProgress,
-  Stack, Typography,
+  Accordion, AccordionDetails, AccordionSummary, Alert, AlertTitle, Box, Button, Card, CardContent, Chip, Divider, IconButton,
+  LinearProgress, Stack, Tooltip, Typography,
 } from '@mui/material'
+import { useState } from 'react'
 import { Link as RouterLink } from 'react-router'
 import { ApiError } from '../api/client'
 import { CheckInForm } from '../checkin/CheckInForm'
@@ -16,6 +18,7 @@ import { tierColor } from '../checkin/tierColor'
 import { HeaderStats, type HeaderStat } from '../components/HeaderStat'
 import { useNotify } from '../components/NotifyContext'
 import { PageHeader } from '../components/PageHeader'
+import { InsertExerciseCard } from './InsertExerciseCard'
 import { useRebuildSession, useSession } from './queries'
 import { RestTimer } from './RestTimer'
 import { clock, describeSet, isStrength, restSeconds } from './setFormat'
@@ -168,6 +171,13 @@ function ReadySession({ date, session, workout, outOfDate, rebuilding, onRebuild
   const [restEndsAt, setRestEndsAt] = useStoredTimer('opslog.rest', date)
   useWakeLock(workout.active)
   const notify = useNotify()
+  // the position an exercise is being inserted at, or null
+  const [insertAt, setInsertAt] = useState<number | null>(null)
+
+  // a + before each card and after the last; the open one becomes the add card
+  const slot = (position: number) => insertAt === position
+    ? <InsertExerciseCard key={`insert-${position}`} date={date} position={position} onDone={() => setInsertAt(null)} />
+    : <InsertSlot key={`slot-${position}`} onClick={() => setInsertAt(position)} />
 
   // rebuilding would delete the log, so the server refuses it
   const hasLogs = session.exercises.some((item) => item.logged.length > 0)
@@ -189,14 +199,17 @@ function ReadySession({ date, session, workout, outOfDate, rebuilding, onRebuild
 
       {workout.active ? (
         <>
-          <Stack spacing={1.5} sx={{ mb: 2 }}>
-            {session.exercises.map((item) => (
-              <WorkoutCard key={item.position} date={date} item={item}
-                           onLogged={() => setRestEndsAt(Date.now() + restSeconds(item) * 1000)} />
-            ))}
+          <Stack spacing={0.5} sx={{ mb: 2 }}>
+            {session.exercises.flatMap((item) => [
+              slot(item.position),
+              <WorkoutCard key={item.id} date={date} item={item}
+                           onLogged={() => setRestEndsAt(Date.now() + restSeconds(item) * 1000)} />,
+            ])}
+            {slot(session.exercises.length + 1)}
           </Stack>
           <Button variant="contained" fullWidth sx={{ mb: 2 }} onClick={() => {
             setRestEndsAt(null)
+            setInsertAt(null)
             workout.finish()
             notify('Workout finished')
           }}>
@@ -210,7 +223,7 @@ function ReadySession({ date, session, workout, outOfDate, rebuilding, onRebuild
           </Button>
           <Stack spacing={1} sx={{ mb: 2 }}>
             {session.exercises.map((item) => (
-              <ExerciseCard key={item.position} item={item} />
+              <ExerciseCard key={item.id} item={item} />
             ))}
           </Stack>
         </>
@@ -266,6 +279,7 @@ function ExerciseCard({ item }: { item: SessionExercise }) {
             <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
               <Typography sx={{ fontWeight: 600 }}>{item.name}</Typography>
               {item.mainLift && <Chip size="small" variant="outlined" label="Main lift" />}
+              {item.adHoc && <Chip size="small" color="primary" variant="outlined" label="Added" />}
               {item.skipped && <Chip size="small" label="Skipped" />}
             </Stack>
             <Typography variant="body2">
@@ -301,5 +315,18 @@ function ExerciseCard({ item }: { item: SessionExercise }) {
         </Stack>
       </CardContent>
     </Card>
+  )
+}
+
+/* a thin + between workout cards */
+function InsertSlot({ onClick }: { onClick: () => void }) {
+  return (
+    <Divider>
+      <Tooltip title="Add an exercise here">
+        <IconButton size="small" aria-label="Add an exercise here" onClick={onClick}>
+          <AddIcon fontSize="small" />
+        </IconButton>
+      </Tooltip>
+    </Divider>
   )
 }

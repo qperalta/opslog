@@ -61,6 +61,7 @@ export function WorkoutCard({ date, item, onLogged }: Props) {
         <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
           <Typography sx={{ fontWeight: 600 }}>{item.name}</Typography>
           {item.mainLift && <Chip size="small" variant="outlined" label="Main lift" />}
+          {item.adHoc && <Chip size="small" color="primary" variant="outlined" label="Added" />}
         </Stack>
         <Typography variant="body2">
           {item.sets} × {item.target}
@@ -102,7 +103,7 @@ export function WorkoutCard({ date, item, onLogged }: Props) {
 
         <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
           {holdSeconds > 0 && open > 0 && (
-            <HoldTimer date={date} storageKey={`opslog.hold.${item.position}`} seconds={holdSeconds}
+            <HoldTimer date={date} storageKey={`opslog.hold.${item.id}`} seconds={holdSeconds}
                        onDone={(seconds) => setHeld({ seconds: String(seconds), count: held.count + 1 })} />
           )}
           <Button size="small" variant="outlined" startIcon={<AddIcon />} disabled={rows >= MAX_SETS}
