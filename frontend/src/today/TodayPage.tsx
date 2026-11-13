@@ -70,6 +70,9 @@ export function TodayPage() {
   const checkIn = useCheckIn(today)
   const rebuild = useRebuildSession()
   const notify = useNotify()
+  const workout = useWorkoutMode(today)
+  // during a workout the page shows only the exercises and Finish workout
+  const inWorkout = workout.active && session.data?.status === 'READY'
 
   const noProgram = session.error instanceof ApiError && session.error.status === 404
 
@@ -84,6 +87,10 @@ export function TodayPage() {
       onSuccess: () => notify('Session rebuilt'),
       onError: (error) => notify(error.message, 'error'),
     })
+
+  if(inWorkout && session.data) {
+    return <ReadySession date={today} session={session.data} workout={workout} outOfDate={false} rebuilding={false} onRebuild={onRebuild} />
+  }
 
   return (
     <>
@@ -138,7 +145,7 @@ export function TodayPage() {
       )}
 
       {session.data?.status === 'READY' && (
-        <ReadySession date={today} session={session.data} outOfDate={outOfDate} rebuilding={rebuild.isPending} onRebuild={onRebuild} />
+        <ReadySession date={today} session={session.data} workout={workout} outOfDate={outOfDate} rebuilding={rebuild.isPending} onRebuild={onRebuild} />
       )}
 
       <Box sx={{ mt: 3 }}>
@@ -151,14 +158,14 @@ export function TodayPage() {
 interface ReadyProps {
   date: string
   session: Session
+  workout: ReturnType<typeof useWorkoutMode>
   outOfDate: boolean
   rebuilding: boolean
   onRebuild: () => void
 }
 
-function ReadySession({ date, session, outOfDate, rebuilding, onRebuild }: ReadyProps) {
+function ReadySession({ date, session, workout, outOfDate, rebuilding, onRebuild }: ReadyProps) {
   const [restEndsAt, setRestEndsAt] = useStoredTimer('opslog.rest', date)
-  const workout = useWorkoutMode(date)
   useWakeLock(workout.active)
   const notify = useNotify()
 
@@ -167,7 +174,7 @@ function ReadySession({ date, session, outOfDate, rebuilding, onRebuild }: Ready
 
   return (
     <>
-      {outOfDate && (
+      {outOfDate && !workout.active && (
         <Alert
           severity="warning"
           sx={{ mb: 2 }}
@@ -209,21 +216,20 @@ function ReadySession({ date, session, outOfDate, rebuilding, onRebuild }: Ready
         </>
       )}
 
-      <Card variant="outlined" sx={{ mb: 2 }}>
-        <CardContent>
-          <Typography variant="subtitle1" component="h2" sx={{ fontWeight: 600, mb: 1 }}>
-            Why today looks like this
-          </Typography>
-          <Box component="ul" sx={{ m: 0, pl: 2.5 }}>
-            {session.notes.map((note) => (
-              <Typography component="li" variant="body2" key={note} sx={{ mb: 0.5 }}>{note}</Typography>
-            ))}
-          </Box>
-        </CardContent>
-      </Card>
-
       {!workout.active && (
         <>
+          <Card variant="outlined" sx={{ mb: 2 }}>
+            <CardContent>
+              <Typography variant="subtitle1" component="h2" sx={{ fontWeight: 600, mb: 1 }}>
+                Why today looks like this
+              </Typography>
+              <Box component="ul" sx={{ m: 0, pl: 2.5 }}>
+                {session.notes.map((note) => (
+                  <Typography component="li" variant="body2" key={note} sx={{ mb: 0.5 }}>{note}</Typography>
+                ))}
+              </Box>
+            </CardContent>
+          </Card>
           <Button variant="outlined" fullWidth onClick={onRebuild} disabled={rebuilding || hasLogs}>
             Rebuild session
           </Button>
